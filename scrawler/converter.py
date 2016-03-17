@@ -95,13 +95,3 @@ def tile_metadata(tile, product):
     }
 
     return meta
-
-
-# if __name__ == '__main__':
-#     product = metadata_to_dict('metadata.xml')
-
-#     import json
-#     f = open('tileInfo.json', 'r')
-#     tile = json.loads(f.read(), object_pairs_hook=OrderedDict)
-
-#     print(json.dumps(tile_metadata(tile, product)))
