@@ -2,7 +2,7 @@ import json
 import unittest
 from collections import OrderedDict
 
-from six import iterkeys
+from six import iterkeys, u, b
 from scrawler.converter import camelcase_underscore, metadata_to_dict, tile_metadata
 
 
@@ -30,8 +30,8 @@ class Test(unittest.TestCase):
 
     def test_tile_metadata(self):
 
-        f = open('tests/samples/tileInfo.json', 'r')
-        tile_info = json.loads(f.read(), object_pairs_hook=OrderedDict)
+        f = open('tests/samples/tileInfo.json', 'rb')
+        tile_info = json.loads(f.read().decode(), object_pairs_hook=OrderedDict)
 
         tile = tile_metadata(tile_info, metadata_to_dict('tests/samples/metadata.xml'))
 

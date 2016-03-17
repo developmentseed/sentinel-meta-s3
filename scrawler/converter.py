@@ -2,6 +2,8 @@ import re
 from collections import OrderedDict
 import xml.etree.cElementTree as etree
 
+from six import iteritems
+
 
 def camelcase_underscore(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
@@ -82,7 +84,7 @@ def tile_metadata(tile, product):
     tile.pop('datastrip')
     bands = product.pop('band_list')
 
-    for k, v in tile.iteritems():
+    for k, v in iteritems(tile):
         meta[camelcase_underscore(k)] = v
 
     meta.update(product)

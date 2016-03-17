@@ -11,7 +11,7 @@ def get_tile_metadata_path(path):
 
     meta_obj = s3.Object(bucket_name, path)
 
-    meta = json.loads(meta_obj.get()['Body'].read())
+    meta = json.loads(meta_obj.get()['Body'].read().decode())
 
     paths = []
     for tile in meta['tiles']:
