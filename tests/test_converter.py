@@ -36,6 +36,7 @@ class Test(unittest.TestCase):
         tile = tile_metadata(tile_info, metadata_to_dict('tests/samples/metadata.xml'))
 
         assert isinstance(tile, OrderedDict)
+        assert tile['thumbnail'] == 'http://sentinel-s2-l1c.s3.amazonaws.com/tiles/56/X/NF/2016/3/16/0/preview.jp2'
         assert tile['tile_name'] == 'S2A_OPER_MSI_L1C_TL_SGS__20160316T054120_A003818_T56XNF_N02.01'
         assert tile['utm_zone'] == 56
         assert tile['data_coverage_percentage'] == 65.58

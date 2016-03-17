@@ -71,6 +71,7 @@ def metadata_to_dict(metadata):
 
 def tile_metadata(tile, product):
 
+    s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
     grid = 'T{0}{1}{2}'.format(tile['utmZone'], tile['latitudeBand'], tile['gridSquare'])
 
     meta = OrderedDict({
@@ -78,6 +79,8 @@ def tile_metadata(tile, product):
     })
 
     meta['date'] = tile['timestamp'].split('T')[0]
+
+    meta['thumbnail'] = '{1}/{0}/preview.jp2'.format(tile['path'], s3_url)
 
     # remove unnecessary keys
     product.pop('tiles')
@@ -90,7 +93,7 @@ def tile_metadata(tile, product):
     meta.update(product)
 
     # construct download links
-    links = ['http://sentinel-s2-l1c.s3.amazonaws.com/{0}/{1}.jp2'.format(meta['path'], b) for b in bands]
+    links = ['{2}/{0}/{1}.jp2'.format(meta['path'], b, s3_url) for b in bands]
 
     meta['download_links'] = {
         'aws_s3': links
