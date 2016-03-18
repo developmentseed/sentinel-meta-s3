@@ -3,7 +3,7 @@ import json
 import logging
 import requests
 from copy import copy
-from six import iteritems
+from six import iteritems, iterkeys
 
 from scrawler.crawler import get_product_metadata_path
 from scrawler.converter import metadata_to_dict, tile_metadata
@@ -28,6 +28,9 @@ def generate_metadata(year, month, day, dst_folder):
     s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
     product_list = get_product_metadata_path(year, month, day)
 
+    logger.info('There are %s products in %s-%s-%s' % (len(list(iterkeys(product_list))),
+                                                       year, month, day))
+
     for name, product in iteritems(product_list):
 
         mkdirp(year_dir)
@@ -39,13 +42,18 @@ def generate_metadata(year, month, day, dst_folder):
 
         for tile in product['tiles']:
             tile_info = requests.get('{0}/{1}'.format(s3_url, tile))
-            metadata = tile_metadata(tile_info.json(), copy(product_metadata))
+            try:
+                metadata = tile_metadata(tile_info.json(), copy(product_metadata))
 
-            product_dir = os.path.join(day_dir, metadata['product_name'])
-            mkdirp(product_dir)
+                product_dir = os.path.join(day_dir, metadata['product_name'])
+                mkdirp(product_dir)
 
-            f = open(os.path.join(product_dir, metadata['tile_name'] + '.json'), 'w')
-            f.write(json.dumps(metadata))
-            f.close()
+                f = open(os.path.join(product_dir, metadata['tile_name'] + '.json'), 'w')
+                f.write(json.dumps(metadata))
+                f.close()
 
-            logger.info('Saving to disk: %s' % metadata['tile_name'])
+                logger.info('Saving to disk: %s' % metadata['tile_name'])
+            except json.decoder.JSONDecodeError:
+                print(tile_info.status_code)
+                print(tile_info.content)
+                logger.info('Tile: %s was not found' % tile)
