@@ -2,7 +2,7 @@ import json
 import unittest
 from collections import OrderedDict
 
-from six import iterkeys, u, b
+from six import iterkeys
 from scrawler.converter import camelcase_underscore, metadata_to_dict, tile_metadata
 
 
@@ -17,7 +17,8 @@ class Test(unittest.TestCase):
 
     def test_metadata_to_dict(self):
 
-        product = metadata_to_dict('tests/samples/metadata.xml')
+        xml = open('tests/samples/metadata.xml')
+        product = metadata_to_dict(xml)
 
         assert isinstance(product, OrderedDict)
         assert 'band_list' in product
