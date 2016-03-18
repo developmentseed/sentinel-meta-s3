@@ -20,6 +20,13 @@ def mkdirp(path):
 
 def generate_metadata(year, month, day, dst_folder):
 
+    counter = {
+        'products': 0,
+        'saved_tiles': 0,
+        'skipped_tiles': 0,
+        'skipped_tiles_paths': []
+    }
+
     # create folders
     year_dir = os.path.join(dst_folder, str(year))
     month_dir = os.path.join(year_dir, str(month))
@@ -40,6 +47,8 @@ def generate_metadata(year, month, day, dst_folder):
         product_info = requests.get('{0}/{1}'.format(s3_url, product['metadata']), stream=True)
         product_metadata = metadata_to_dict(product_info.raw)
 
+        counter['products'] += 1
+
         for tile in product['tiles']:
             tile_info = requests.get('{0}/{1}'.format(s3_url, tile))
             try:
@@ -53,7 +62,10 @@ def generate_metadata(year, month, day, dst_folder):
                 f.close()
 
                 logger.info('Saving to disk: %s' % metadata['tile_name'])
+                counter['saved_tiles'] += 1
             except json.decoder.JSONDecodeError:
-                print(tile_info.status_code)
-                print(tile_info.content)
-                logger.info('Tile: %s was not found' % tile)
+                logger.warning('Tile: %s was not found and skipped' % tile)
+                counter['skipped_tiles'] += 1
+                counter['skipped_tiles_paths'].append(tile)
+
+    return counter
