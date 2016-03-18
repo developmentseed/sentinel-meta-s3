@@ -1,8 +1,12 @@
 import re
+import logging
 from collections import OrderedDict
 import xml.etree.cElementTree as etree
 
 from six import iteritems
+
+
+logger = logging.getLogger('sentinel.meta.s3')
 
 
 def camelcase_underscore(name):
@@ -69,14 +73,26 @@ def metadata_to_dict(metadata):
     return meta
 
 
+def two_digit_int(value):
+
+    value = int(value)
+
+    if value < 10 and value > -1:
+        return '0{0}'.format(value)
+
+    return value
+
+
 def tile_metadata(tile, product):
 
     s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
-    grid = 'T{0}{1}{2}'.format(tile['utmZone'], tile['latitudeBand'], tile['gridSquare'])
+    grid = 'T{0}{1}{2}'.format(two_digit_int(tile['utmZone']), tile['latitudeBand'], tile['gridSquare'])
 
     meta = OrderedDict({
         'tile_name': product['tiles'][grid]
     })
+
+    logger.info('Processing tile %s' % meta['tile_name'])
 
     meta['date'] = tile['timestamp'].split('T')[0]
 
