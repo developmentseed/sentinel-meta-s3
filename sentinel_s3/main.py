@@ -143,10 +143,10 @@ def range_metadata(start, end, dst_folder, num_worker_threads=0, writers=[file_w
 
     for d in dates:
         if threaded:
-            queue.put([d.year, d.month, d.day, dst_folder, writer])
+            queue.put([d.year, d.month, d.day, dst_folder, writers])
         else:
             logger.info('Getting metadata of {0}-{1}-{2}'.format(d.year, d.month, d.day))
-            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder, writer))
+            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder, writers))
 
     # run the threads
     if threaded:
