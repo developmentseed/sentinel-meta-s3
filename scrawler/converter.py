@@ -26,12 +26,15 @@ def epsg_code(geojson):
 
 def convert_coordinates(coords, origin, wgs84):
     if isinstance(coords, list):
-        if isinstance(coords[0], list):
-            return [convert_coordinates(c, origin, wgs84) for c in coords]
-        elif isinstance(coords[0], float):
-            return list(transform(origin, wgs84, *coords))
-    else:
-        return None
+        try:
+            if isinstance(coords[0], list):
+                return [convert_coordinates(c, origin, wgs84) for c in coords]
+            elif isinstance(coords[0], float):
+                return list(transform(origin, wgs84, *coords))
+        except IndexError:
+            pass
+
+    return None
 
 
 def to_latlon(geojson):
@@ -163,6 +166,7 @@ def tile_metadata(tile, product):
     # change coordinates to wsg4 degrees
     keys = ['tile_origin', 'tile_geometry', 'tile_data_geometry']
     for key in keys:
-        meta[key] = to_latlon(meta[key])
+        if key in meta:
+            meta[key] = to_latlon(meta[key])
 
     return meta
