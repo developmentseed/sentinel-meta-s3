@@ -3,10 +3,10 @@ import json
 import logging
 import threading
 from copy import copy
-from queue import Queue
 from datetime import date, timedelta
 
 import requests
+from six.moves.queue import Queue
 from six import iteritems, iterkeys
 from scrawler.crawler import get_product_metadata_path
 from scrawler.converter import metadata_to_dict, tile_metadata
@@ -111,11 +111,10 @@ def range_metadata(start, end, dst_folder, num_worker_threads=0):
                 total_counter[key] += counter[key]
 
     for d in dates:
-        logger.info('Getting metadata of {0}-{1}-{2}'.format(d.year, d.month, d.day))
-
         if threaded:
             queue.put([d.year, d.month, d.day, dst_folder])
         else:
+            logger.info('Getting metadata of {0}-{1}-{2}'.format(d.year, d.month, d.day))
             update_counter(daily_metadata(d.year, d.month, d.day, dst_folder))
 
     # run the threads
@@ -123,6 +122,7 @@ def range_metadata(start, end, dst_folder, num_worker_threads=0):
         def worker():
             while not queue.empty():
                 args = queue.get()
+                logger.info('Getting metadata of {0}-{1}-{2}'.format(*args[:3]))
                 update_counter(daily_metadata(*args))
                 queue.task_done()
 
