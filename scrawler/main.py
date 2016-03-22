@@ -11,6 +11,12 @@ from six import iteritems, iterkeys
 from scrawler.crawler import get_product_metadata_path
 from scrawler.converter import metadata_to_dict, tile_metadata
 
+# Python 2 comptability
+try:
+    JSONDecodeError = json.JSONDecodeError
+except AttributeError:
+    JSONDecodeError = ValueError
+
 
 logger = logging.getLogger('sentinel.meta.s3')
 
@@ -66,7 +72,7 @@ def daily_metadata(year, month, day, dst_folder):
 
                 logger.info('Saving to disk: %s' % metadata['tile_name'])
                 counter['saved_tiles'] += 1
-            except json.decoder.JSONDecodeError:
+            except JSONDecodeError:
                 logger.warning('Tile: %s was not found and skipped' % tile)
                 counter['skipped_tiles'] += 1
                 counter['skipped_tiles_paths'].append(tile)
