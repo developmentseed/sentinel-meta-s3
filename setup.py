@@ -18,12 +18,12 @@ install_requires = [x.strip() for x in all_reqs if 'git+' not in x]
 dependency_links = [x.strip().replace('git+', '') for x in all_reqs if 'git+' not in x]
 
 setup(
-    name='sentinel-meta-s3',
+    name='sentinel-s3',
     version=__version__,
     description='Python libraries for extracting Sentinel-2\'s metadata from Amazon S3',
     long_description=long_description,
-    url='https://github.com/developmentseed/sentinel-meta-s3',
-    download_url='https://github.com/developmentseed/sentinel-meta-s3/tarball/' + __version__,
+    url='https://github.com/developmentseed/sentinel-s3',
+    download_url='https://github.com/developmentseed/sentinel-s3/tarball/' + __version__,
     license='CC0',
     classifiers=[
         'Intended Audience :: Developers',
