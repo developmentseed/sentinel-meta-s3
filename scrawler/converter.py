@@ -3,10 +3,53 @@ import logging
 from collections import OrderedDict
 import xml.etree.cElementTree as etree
 
+from pyproj import Proj, transform
 from six import iteritems
 
 
 logger = logging.getLogger('sentinel.meta.s3')
+
+
+def epsg_code(geojson):
+
+    if isinstance(geojson, dict):
+        if 'crs' in geojson:
+            urn = geojson['crs']['properties']['name'].split(':')
+            if 'EPSG' in urn:
+                try:
+                    return int(urn[-1])
+                except (TypeError, ValueError):
+                    return None
+
+    return None
+
+
+def convert_coordinates(coords, origin, wgs84):
+    if isinstance(coords, list):
+        if isinstance(coords[0], list):
+            return [convert_coordinates(c, origin, wgs84) for c in coords]
+        elif isinstance(coords[0], float):
+            return list(transform(origin, wgs84, *coords))
+    else:
+        return None
+
+
+def to_latlon(geojson):
+
+    if isinstance(geojson, dict):
+
+        # get epsg code:
+        code = epsg_code(geojson)
+        if code:
+            origin = Proj(init='epsg:%s' % code)
+            wgs84 = Proj(init='epsg:4326')
+
+            new_coords = convert_coordinates(geojson['coordinates'], origin, wgs84)
+            if new_coords:
+                geojson['coordinates'] = new_coords
+                geojson['crs']['properties']['name'] = 'urn:ogc:def:crs:EPSG:8.9:4326'
+
+    return geojson
 
 
 def camelcase_underscore(name):
@@ -61,6 +104,8 @@ def metadata_to_dict(metadata):
 
     meta['product_cloud_coverage_assessment'] = float(meta.pop('cloud_coverage_assessment'))
 
+    meta['sensing_orbit_number'] = int(meta['sensing_orbit_number'])
+
     # get tile list
     meta['tiles'] = get_tiles_list(root.findall('.//Product_Organisation')[0])
 
@@ -114,5 +159,10 @@ def tile_metadata(tile, product):
     meta['download_links'] = {
         'aws_s3': links
     }
+
+    # change coordinates to wsg4 degrees
+    keys = ['tile_origin', 'tile_geometry', 'tile_data_geometry']
+    for key in keys:
+        meta[key] = to_latlon(meta[key])
 
     return meta
