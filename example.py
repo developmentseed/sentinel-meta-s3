@@ -8,7 +8,7 @@ def main():
     start_date = date(2015, 9, 2)
     end_date = date(2015, 9, 2)
 
-    return range_metadata(start_date, end_date, '.', 0, s3_writer)
+    return range_metadata(start_date, end_date, '.', 0, [s3_writer])
 
 
 if __name__ == '__main__':
