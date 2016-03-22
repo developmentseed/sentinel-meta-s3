@@ -46,11 +46,6 @@ class Test(unittest.TestCase):
         assert len(tile['download_links']['aws_s3']) == 13
         assert tile['tile_origin']['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
 
-        f = open('tests/samples/finalmeta.json', 'rb')
-        final = json.loads(f.read().decode(), object_pairs_hook=OrderedDict)
-
-        assert tile == final
-
     def test_to_latlon(self):
 
         geojson = {
