@@ -86,9 +86,9 @@ def range_metadata(start, end, dst_folder, num_worker_threads=0):
     assert isinstance(end, date)
     threaded = False
 
-    # threads over 5 are capped at 5
-    if num_worker_threads > 5:
-        num_worker_threads = 5
+    # threads over 5 are capped at 10
+    if num_worker_threads > 10:
+        num_worker_threads = 10
 
     if num_worker_threads > 0:
         threaded = True
