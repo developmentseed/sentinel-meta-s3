@@ -1,10 +1,13 @@
 import os
 import json
 import logging
-import requests
+import threading
 from copy import copy
-from six import iteritems, iterkeys
+from queue import Queue
+from datetime import date, timedelta
 
+import requests
+from six import iteritems, iterkeys
 from scrawler.crawler import get_product_metadata_path
 from scrawler.converter import metadata_to_dict, tile_metadata
 
@@ -18,7 +21,7 @@ def mkdirp(path):
         os.makedirs(path)
 
 
-def generate_metadata(year, month, day, dst_folder):
+def daily_metadata(year, month, day, dst_folder):
 
     counter = {
         'products': 0,
@@ -69,3 +72,67 @@ def generate_metadata(year, month, day, dst_folder):
                 counter['skipped_tiles_paths'].append(tile)
 
     return counter
+
+
+def range_metadata(start, end, dst_folder, num_worker_threads=0):
+
+    assert isinstance(start, date)
+    assert isinstance(end, date)
+    threaded = False
+
+    # threads over 5 are capped at 5
+    if num_worker_threads > 5:
+        num_worker_threads = 5
+
+    if num_worker_threads > 0:
+        threaded = True
+        queue = Queue()
+
+    delta = end - start
+
+    dates = []
+
+    for i in range(delta.days + 1):
+        dates.append(start + timedelta(days=i))
+
+    days = len(dates)
+
+    total_counter = {
+        'days': days,
+        'products': 0,
+        'saved_tiles': 0,
+        'skipped_tiles': 0,
+        'skipped_tiles_paths': []
+    }
+
+    def update_counter(counter):
+        for key in iterkeys(total_counter):
+            if key in counter:
+                total_counter[key] += counter[key]
+
+    for d in dates:
+        logger.info('Getting metadata of {0}-{1}-{2}'.format(d.year, d.month, d.day))
+
+        if threaded:
+            queue.put([d.year, d.month, d.day, dst_folder])
+        else:
+            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder))
+
+    # run the threads
+    if threaded:
+        def worker():
+            while not queue.empty():
+                args = queue.get()
+                update_counter(daily_metadata(*args))
+                queue.task_done()
+
+        threads = []
+        for i in range(num_worker_threads):
+            t = threading.Thread(target=worker)
+            t.start()
+            threads.append(t)
+
+        # block until all tasks are done
+        queue.join()
+
+    return total_counter
