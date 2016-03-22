@@ -5,10 +5,10 @@ from scrawler.main import range_metadata
 
 def main():
 
-    start_date = date(2015, 9, 2)
-    end_date = date(2015, 9, 10)
+    start_date = date(2016, 1, 1)
+    end_date = date(2016, 3, 22)
 
-    return range_metadata(start_date, end_date, '.', 2)
+    return range_metadata(start_date, end_date, '.', 5)
 
 
 if __name__ == '__main__':
