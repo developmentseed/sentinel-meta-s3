@@ -1,6 +1,6 @@
 import unittest
 from six import iterkeys
-from scrawler.crawler import get_product_metadata_path
+from sentinel_s3.crawler import get_product_metadata_path
 
 
 class Test(unittest.TestCase):

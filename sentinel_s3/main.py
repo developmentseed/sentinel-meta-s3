@@ -8,8 +8,8 @@ from datetime import date, timedelta
 import requests
 from six.moves.queue import Queue
 from six import iteritems, iterkeys
-from scrawler.crawler import get_product_metadata_path
-from scrawler.converter import metadata_to_dict, tile_metadata
+from sentinel_s3.crawler import get_product_metadata_path
+from sentinel_s3.converter import metadata_to_dict, tile_metadata
 
 # Python 2 comptability
 try:

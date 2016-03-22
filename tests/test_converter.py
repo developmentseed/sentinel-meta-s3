@@ -4,7 +4,7 @@ from copy import copy
 from collections import OrderedDict
 
 from six import iterkeys
-from scrawler.converter import camelcase_underscore, metadata_to_dict, tile_metadata, to_latlon
+from sentinel_s3.converter import camelcase_underscore, metadata_to_dict, tile_metadata, to_latlon
 
 
 class Test(unittest.TestCase):

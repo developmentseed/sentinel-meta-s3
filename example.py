@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from scrawler.main import range_metadata
+from sentinel_s3.main import range_metadata
 
 
 def main():

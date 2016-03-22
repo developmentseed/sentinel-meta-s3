@@ -1,7 +1,7 @@
 
 import unittest
 
-from scrawler.main import daily_metadata
+from sentinel_s3.main import daily_metadata
 
 
 class Test(unittest.TestCase):
