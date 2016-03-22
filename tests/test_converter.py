@@ -1,9 +1,10 @@
 import json
 import unittest
+from copy import copy
 from collections import OrderedDict
 
 from six import iterkeys
-from scrawler.converter import camelcase_underscore, metadata_to_dict, tile_metadata
+from scrawler.converter import camelcase_underscore, metadata_to_dict, tile_metadata, to_latlon
 
 
 class Test(unittest.TestCase):
@@ -43,3 +44,31 @@ class Test(unittest.TestCase):
         assert tile['data_coverage_percentage'] == 65.58
         assert tile['sensing_orbit_direction'] == 'DESCENDING'
         assert len(tile['download_links']['aws_s3']) == 13
+        assert tile['tile_origin']['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
+
+        f = open('tests/samples/finalmeta.json', 'rb')
+        final = json.loads(f.read().decode(), object_pairs_hook=OrderedDict)
+
+        assert tile == final
+
+    def test_to_latlon(self):
+
+        geojson = {
+            'type': 'Polygon',
+            'coordinates': [
+                [
+                    [448938.374906865, 2500019.0],
+                    [509759.0, 2500019.0],
+                    [509759.0, 2390221.0],
+                    [424439.204990156, 2390221.0],
+                    [430306.260834363, 2416547.808440298],
+                    [444965.351229892, 2482150.64898733],
+                    [448938.374906865, 2500019.0]
+                ]
+            ],
+            'crs': {'type': 'name', 'properties': {'name': 'urn:ogc:def:crs:EPSG:8.8.1:32632'}}
+        }
+
+        gj = to_latlon(copy(geojson))
+        assert gj['coordinates'][0][0] != geojson['coordinates'][0][0]
+        assert gj['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
