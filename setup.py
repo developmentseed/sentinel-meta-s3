@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 here = path.abspath(path.dirname(__file__))
 
@@ -33,9 +33,6 @@ setup(
         'Intended Audience :: Science/Research',
         'License :: Freeware',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.0',
-        'Programming Language :: Python :: 3.1',
-        'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',

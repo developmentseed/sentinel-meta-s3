@@ -33,7 +33,7 @@ Example
 
     import logging
     from datetime import date
-    from sentinel_s3.main import range_metadata
+    from sentinel_s3 import range_metadata
 
 
     def main():
