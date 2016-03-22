@@ -7,7 +7,7 @@ __version__ = '0.1.0'
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 # get the dependencies and installs
@@ -26,10 +26,19 @@ setup(
     download_url='https://github.com/developmentseed/sentinel-s3/tarball/' + __version__,
     license='CC0',
     classifiers=[
+        'Framework :: Pytest',
+        'Topic :: Scientific/Engineering :: GIS',
+        'Topic :: Scientific/Engineering',
         'Intended Audience :: Developers',
-        'Intended Audience :: GIS',
-        'Programming Language :: Python :: 3',
+        'Intended Audience :: Science/Research',
+        'License :: Freeware',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.0',
+        'Programming Language :: Python :: 3.1',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ],
     keywords='',
     packages=find_packages(exclude=['docs', 'tests*']),
