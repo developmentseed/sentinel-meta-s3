@@ -5,6 +5,7 @@ import threading
 from copy import copy
 from datetime import date, timedelta
 
+import boto3
 import requests
 from six.moves.queue import Queue
 from six import iteritems, iterkeys
@@ -20,6 +21,10 @@ except AttributeError:
 
 logger = logging.getLogger('sentinel.meta.s3')
 
+bucket_name = os.getenv('BUCKETNAME', 'sentinel-metadata')
+s3 = boto3.resource('s3')
+bucket = s3.Bucket(bucket_name)
+
 
 def mkdirp(path):
 
@@ -27,7 +32,29 @@ def mkdirp(path):
         os.makedirs(path)
 
 
-def daily_metadata(year, month, day, dst_folder):
+def file_writer(product_dir, metadata):
+    mkdirp(product_dir)
+
+    f = open(os.path.join(product_dir, metadata['tile_name'] + '.json'), 'w')
+    f.write(json.dumps(metadata))
+    f.close()
+
+
+def s3_writer(product_dir, metadata):
+    # make sure product_dir doesn't start with slash (/) or dot (.)
+    if product_dir.startswith('.'):
+        product_dir = product_dir[1:]
+
+    if product_dir.startswith('/'):
+        product_dir = product_dir[1:]
+
+    key = os.path.join(product_dir, metadata['tile_name'] + '.json')
+    s3.Object(bucket_name, key).put(json.dumps(metadata))
+    object_acl = s3.ObjectAcl(bucket_name, key)
+    object_acl.put(ACL='public-read')
+
+
+def daily_metadata(year, month, day, dst_folder, writer=file_writer):
 
     counter = {
         'products': 0,
@@ -49,9 +76,9 @@ def daily_metadata(year, month, day, dst_folder):
 
     for name, product in iteritems(product_list):
 
-        mkdirp(year_dir)
-        mkdirp(month_dir)
-        mkdirp(day_dir)
+        # mkdirp(year_dir)
+        # mkdirp(month_dir)
+        # mkdirp(day_dir)
 
         product_info = requests.get('{0}/{1}'.format(s3_url, product['metadata']), stream=True)
         product_metadata = metadata_to_dict(product_info.raw)
@@ -64,11 +91,9 @@ def daily_metadata(year, month, day, dst_folder):
                 metadata = tile_metadata(tile_info.json(), copy(product_metadata))
 
                 product_dir = os.path.join(day_dir, metadata['product_name'])
-                mkdirp(product_dir)
 
-                f = open(os.path.join(product_dir, metadata['tile_name'] + '.json'), 'w')
-                f.write(json.dumps(metadata))
-                f.close()
+
+                writer(product_dir, metadata)
 
                 logger.info('Saving to disk: %s' % metadata['tile_name'])
                 counter['saved_tiles'] += 1
@@ -80,7 +105,7 @@ def daily_metadata(year, month, day, dst_folder):
     return counter
 
 
-def range_metadata(start, end, dst_folder, num_worker_threads=0):
+def range_metadata(start, end, dst_folder, num_worker_threads=0, writer=file_writer):
 
     assert isinstance(start, date)
     assert isinstance(end, date)
@@ -118,10 +143,10 @@ def range_metadata(start, end, dst_folder, num_worker_threads=0):
 
     for d in dates:
         if threaded:
-            queue.put([d.year, d.month, d.day, dst_folder])
+            queue.put([d.year, d.month, d.day, dst_folder, writer])
         else:
             logger.info('Getting metadata of {0}-{1}-{2}'.format(d.year, d.month, d.day))
-            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder))
+            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder, writer))
 
     # run the threads
     if threaded:
