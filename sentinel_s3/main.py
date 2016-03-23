@@ -54,7 +54,7 @@ def s3_writer(product_dir, metadata):
     object_acl.put(ACL='public-read')
 
 
-def daily_metadata(year, month, day, dst_folder, writer=file_writer):
+def daily_metadata(year, month, day, dst_folder, writers=[file_writer]):
 
     counter = {
         'products': 0,
@@ -92,8 +92,8 @@ def daily_metadata(year, month, day, dst_folder, writer=file_writer):
 
                 product_dir = os.path.join(day_dir, metadata['product_name'])
 
-
-                writer(product_dir, metadata)
+                for w in writers:
+                    w(product_dir, metadata)
 
                 logger.info('Saving to disk: %s' % metadata['tile_name'])
                 counter['saved_tiles'] += 1
@@ -105,7 +105,7 @@ def daily_metadata(year, month, day, dst_folder, writer=file_writer):
     return counter
 
 
-def range_metadata(start, end, dst_folder, num_worker_threads=0, writer=file_writer):
+def range_metadata(start, end, dst_folder, num_worker_threads=0, writers=[file_writer]):
 
     assert isinstance(start, date)
     assert isinstance(end, date)
@@ -143,10 +143,10 @@ def range_metadata(start, end, dst_folder, num_worker_threads=0, writer=file_wri
 
     for d in dates:
         if threaded:
-            queue.put([d.year, d.month, d.day, dst_folder, writer])
+            queue.put([d.year, d.month, d.day, dst_folder, writers])
         else:
             logger.info('Getting metadata of {0}-{1}-{2}'.format(d.year, d.month, d.day))
-            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder, writer))
+            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder, writers))
 
     # run the threads
     if threaded:
