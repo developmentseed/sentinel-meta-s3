@@ -10,6 +10,19 @@ from six import iteritems
 logger = logging.getLogger('sentinel.meta.s3')
 
 
+def pad(value, width, char='0', direction='left'):
+
+    value = str(value)
+
+    while len(value) < width:
+        if direction == 'left':
+            value = '{0}{1}'.format(char, value)
+        else:
+            value = '{1}{0}'.format(char, value)
+
+    return value
+
+
 def epsg_code(geojson):
 
     if isinstance(geojson, dict):
@@ -116,25 +129,20 @@ def metadata_to_dict(metadata):
     bands = root.findall('.//Band_List')[0]
     meta['band_list'] = []
     for b in bands:
-        meta['band_list'].append(b.text)
+        band = b.text.replace('B', '')
+        if len(band) == 1:
+            band = 'B' + pad(band, 2)
+        else:
+            band = b.text
+        meta['band_list'].append(band)
 
     return meta
-
-
-def two_digit_int(value):
-
-    value = int(value)
-
-    if value < 10 and value > -1:
-        return '0{0}'.format(value)
-
-    return value
 
 
 def tile_metadata(tile, product):
 
     s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
-    grid = 'T{0}{1}{2}'.format(two_digit_int(tile['utmZone']), tile['latitudeBand'], tile['gridSquare'])
+    grid = 'T{0}{1}{2}'.format(pad(tile['utmZone'], 2), tile['latitudeBand'], tile['gridSquare'])
 
     meta = OrderedDict({
         'tile_name': product['tiles'][grid]

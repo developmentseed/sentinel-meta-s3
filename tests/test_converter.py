@@ -46,6 +46,10 @@ class Test(unittest.TestCase):
         assert len(tile['download_links']['aws_s3']) == 13
         assert tile['tile_origin']['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
 
+        # Make sure bands urls are left padded
+        d_link = tile['download_links']['aws_s3'][0].split('.')[-2].split('/')
+        assert d_link[-1] == 'B01'
+
     def test_to_latlon(self):
 
         geojson = {
