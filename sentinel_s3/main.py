@@ -76,10 +76,6 @@ def daily_metadata(year, month, day, dst_folder, writers=[file_writer]):
 
     for name, product in iteritems(product_list):
 
-        # mkdirp(year_dir)
-        # mkdirp(month_dir)
-        # mkdirp(day_dir)
-
         product_info = requests.get('{0}/{1}'.format(s3_url, product['metadata']), stream=True)
         product_metadata = metadata_to_dict(product_info.raw)
 
