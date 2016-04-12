@@ -75,16 +75,48 @@ class Test(unittest.TestCase):
 
     def test_get_tile_geometry(self):
 
-        (tile, data) = get_tile_geometry('tests/samples/B01.jp2', 32618)
+        tiles = {
+            'partial_right': {
+                'path': 'tests/samples/B01_right.jp2',
+                'tile': [-75.3723, -74.8924],
+                'data': [-74.8924, -74.8924],
+                'epsg': 32618
+            },
+            'partial_left': {
+                'path': 'tests/samples/B01_left.jp2',
+                'tile': [-65.5913, -65.1366],
+                'data': [-65.5929, -65.2534],
+                'epsg': 32620
+            },
+            'full': {
+                'path': 'tests/samples/B01_full.jp2',
+                'tile': [-67.4893, -67.4893],
+                'data': [-67.4893, -67.4893],
+                'epsg': 32620
+            },
+        }
 
-        b1json = open('tests/samples/B01_geometry.json')
-        b1 = json.loads(b1json.read())
+        for t in iterkeys(tiles):
+            print(t)
+            (tile, data) = get_tile_geometry(tiles[t]['path'], tiles[t]['epsg'])
 
-        self.assertEqual(round(b1['features'][0]['geometry']['coordinates'][0][0][0], 4),
-                         round(tile['coordinates'][0][0][0], 4))
-        self.assertEqual(round(b1['features'][1]['geometry']['coordinates'][0][0][0], 4),
-                         round(data['coordinates'][0][0][0], 4))
-        self.assertEqual(round(b1['features'][0]['geometry']['coordinates'][0][1][0], 4),
-                         round(tile['coordinates'][0][1][0], 4))
-        self.assertEqual(round(b1['features'][1]['geometry']['coordinates'][0][1][0], 4),
-                         round(data['coordinates'][0][1][0], 4))
+            fc = {
+                'type': 'FeatureCollection',
+                'features': []
+            }
+
+            for g in [tile, data]:
+                f = {
+                    'type': 'Feature',
+                    'properties': {},
+                    'geometry': g
+                }
+                fc['features'].append(f)
+
+            # uncommen to write the results to disk for testing
+            # f = open('test_%s.geojson' % t, 'w')
+            # f.write(json.dumps(fc))
+
+            for i in range(0, 2):
+                self.assertEqual(tiles[t]['tile'][i], round(tile['coordinates'][0][i][0], 4))
+                self.assertEqual(tiles[t]['data'][i], round(data['coordinates'][0][i][0], 4))
