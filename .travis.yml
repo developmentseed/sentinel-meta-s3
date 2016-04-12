@@ -4,6 +4,14 @@ python:
 - '3.3'
 - '3.4'
 - '3.5'
+
+addons:
+  apt:
+    packages:
+    - libgdal1h
+    - gdal-bin
+    - libgdal-dev
+
 script:
 - python setup.py test
 deploy:
