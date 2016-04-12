@@ -11,6 +11,8 @@ addons:
     - libgdal1h
     - gdal-bin
     - libgdal-dev
+    - libgeos-dev
+    - python-numpy
 
 script:
 - python setup.py test
