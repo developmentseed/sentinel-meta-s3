@@ -4,7 +4,8 @@ from copy import copy
 from collections import OrderedDict
 
 from six import iterkeys
-from sentinel_s3.converter import camelcase_underscore, metadata_to_dict, tile_metadata, to_latlon
+from sentinel_s3.converter import (camelcase_underscore, metadata_to_dict, tile_metadata, to_latlon,
+                                   get_tile_geometry)
 
 
 class Test(unittest.TestCase):
@@ -71,3 +72,13 @@ class Test(unittest.TestCase):
         gj = to_latlon(copy(geojson))
         assert gj['coordinates'][0][0] != geojson['coordinates'][0][0]
         assert gj['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
+
+    def test_get_tile_geometry(self):
+
+        (tile, data) = get_tile_geometry('tests/samples/B01.jp2', 32618)
+
+        b1json = open('tests/samples/B01_geometry.json')
+        b1 = json.loads(b1json.read())
+
+        self.assertEqual(b1['features'][0]['geometry']['coordinates'], tile['coordinates'])
+        self.assertEqual(b1['features'][1]['geometry']['coordinates'], data['coordinates'])
