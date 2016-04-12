@@ -158,6 +158,7 @@ def get_tile_geometry(path, origin_espg, tolerance=200):
         # Get tile geometry
         b = src.bounds
         tile_shape = Polygon([(b[0], b[1]), (b[2], b[1]), (b[2], b[3]), (b[0], b[3]), (b[0], b[1])])
+        tile_geojson = mapping(tile_shape)
 
         # read first band of the image
         image = src.read(1)
@@ -171,13 +172,17 @@ def get_tile_geometry(path, origin_espg, tolerance=200):
         # generate polygons using shapely
         data_shape = [Polygon(s['coordinates'][0]) for (s, v) in data_shape]
 
-        # Make sure polygons are united
-        # also simplify the resulting polygon
-        union = cascaded_union(data_shape).simplify(tolerance, preserve_topology=False)
+        if data_shape:
 
-        # generates a geojson
-        data_geojson = mapping(union)
-        tile_geojson = mapping(tile_shape)
+            # Make sure polygons are united
+            # also simplify the resulting polygon
+            union = cascaded_union(data_shape).simplify(tolerance, preserve_topology=False)
+
+            # generates a geojson
+            data_geojson = mapping(union)
+
+        else:
+            data_geojson = tile_geojson
 
         # convert cooridnates to degrees
         return (to_latlon(tile_geojson, origin_espg), to_latlon(data_geojson, origin_espg))
