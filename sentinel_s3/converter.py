@@ -63,7 +63,15 @@ def to_latlon(geojson, origin_espg=None):
             new_coords = convert_coordinates(geojson['coordinates'], origin, wgs84)
             if new_coords:
                 geojson['coordinates'] = new_coords
-                geojson['crs']['properties']['name'] = 'urn:ogc:def:crs:EPSG:8.9:4326'
+                if 'crs' not in geojson:
+                    geojson['crs'] = {
+                        'type': 'name',
+                        'properties': {
+                            'name': 'urn:ogc:def:crs:EPSG:8.9:4326'
+                        }
+                    }
+                else:
+                    geojson['crs']['properties']['name'] = 'urn:ogc:def:crs:EPSG:8.9:4326'
 
     return geojson
 
@@ -142,7 +150,7 @@ def metadata_to_dict(metadata):
     return meta
 
 
-def get_tile_geometry(path='tests/B01.jp2', origin_espg=None, tolerance=200):
+def get_tile_geometry(path, origin_espg, tolerance=200):
     """ Calculate the data and tile geometry for sentinel-2 tiles """
 
     with rasterio.open(path) as src:
