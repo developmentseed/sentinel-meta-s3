@@ -80,5 +80,11 @@ class Test(unittest.TestCase):
         b1json = open('tests/samples/B01_geometry.json')
         b1 = json.loads(b1json.read())
 
-        self.assertEqual(b1['features'][0]['geometry']['coordinates'], tile['coordinates'])
-        self.assertEqual(b1['features'][1]['geometry']['coordinates'], data['coordinates'])
+        self.assertEqual(round(b1['features'][0]['geometry']['coordinates'][0][0][0], 4),
+                         round(tile['coordinates'][0][0][0], 4))
+        self.assertEqual(round(b1['features'][1]['geometry']['coordinates'][0][0][0], 4),
+                         round(data['coordinates'][0][0][0], 4))
+        self.assertEqual(round(b1['features'][0]['geometry']['coordinates'][0][1][0], 4),
+                         round(tile['coordinates'][0][1][0], 4))
+        self.assertEqual(round(b1['features'][1]['geometry']['coordinates'][0][1][0], 4),
+                         round(data['coordinates'][0][1][0], 4))
