@@ -38,10 +38,10 @@ def epsg_code(geojson):
 
 
 def convert_coordinates(coords, origin, wgs84):
-    if isinstance(coords, list):
+    if isinstance(coords, list) or isinstance(coords, tuple):
         try:
-            if isinstance(coords[0], list):
-                return [convert_coordinates(c, origin, wgs84) for c in coords]
+            if isinstance(coords[0], list) or isinstance(coords[0], tuple):
+                return [convert_coordinates(list(c), origin, wgs84) for c in coords]
             elif isinstance(coords[0], float):
                 return list(transform(origin, wgs84, *coords))
         except IndexError:
