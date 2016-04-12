@@ -3,24 +3,15 @@ import logging
 from collections import OrderedDict
 import xml.etree.cElementTree as etree
 
-from pyproj import Proj, transform
+import rasterio
+from wordpad import pad
 from six import iteritems
-
+from pyproj import Proj, transform
+from rasterio.features import shapes
+from shapely.ops import cascaded_union
+from shapely.geometry import mapping, Polygon
 
 logger = logging.getLogger('sentinel.meta.s3')
-
-
-def pad(value, width, char='0', direction='left'):
-
-    value = str(value)
-
-    while len(value) < width:
-        if direction == 'left':
-            value = '{0}{1}'.format(char, value)
-        else:
-            value = '{1}{0}'.format(char, value)
-
-    return value
 
 
 def epsg_code(geojson):
@@ -52,7 +43,7 @@ def convert_coordinates(coords, origin, wgs84):
     return None
 
 
-def to_latlon(geojson):
+def to_latlon(geojson, origin_espg=None):
     """
     Convert a given geojson to wgs84. The original epsg must be included insde the crs
     tag of geojson
@@ -61,7 +52,10 @@ def to_latlon(geojson):
     if isinstance(geojson, dict):
 
         # get epsg code:
-        code = epsg_code(geojson)
+        if origin_espg:
+            code = origin_espg
+        else:
+            code = epsg_code(geojson)
         if code:
             origin = Proj(init='epsg:%s' % code)
             wgs84 = Proj(init='epsg:4326')
@@ -146,6 +140,39 @@ def metadata_to_dict(metadata):
         meta['band_list'].append(band)
 
     return meta
+
+
+def get_tile_geometry(path='tests/B01.jp2', origin_espg=None, tolerance=200):
+    """ Calculate the data and tile geometry for sentinel-2 tiles """
+
+    with rasterio.open(path) as src:
+
+        # Get tile geometry
+        b = src.bounds
+        tile_shape = Polygon([(b[0], b[1]), (b[2], b[1]), (b[2], b[3]), (b[0], b[3]), (b[0], b[1])])
+
+        # read first band of the image
+        image = src.read(1)
+
+        # create a mask of zero values
+        mask = image == 0.
+
+        # generate shapes of the mask
+        data_shape = shapes(image, mask=mask, transform=src.affine)
+
+        # generate polygons using shapely
+        data_shape = [Polygon(s['coordinates'][0]) for (s, v) in data_shape]
+
+        # Make sure polygons are united
+        # also simplify the resulting polygon
+        union = cascaded_union(data_shape).simplify(tolerance, preserve_topology=False)
+
+        # generates a geojson
+        data_geojson = mapping(union)
+        tile_geojson = mapping(tile_shape)
+
+        # convert cooridnates to degrees
+        return (to_latlon(tile_geojson, origin_espg), to_latlon(data_geojson, origin_espg))
 
 
 def tile_metadata(tile, product):
