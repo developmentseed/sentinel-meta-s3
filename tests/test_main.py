@@ -1,6 +1,4 @@
-
 import unittest
-
 from sentinel_s3 import daily_metadata
 
 
