@@ -24,6 +24,7 @@ def pad(value, width, char='0', direction='left'):
 
 
 def epsg_code(geojson):
+    """ get the espg code from the crs system """
 
     if isinstance(geojson, dict):
         if 'crs' in geojson:
@@ -38,6 +39,7 @@ def epsg_code(geojson):
 
 
 def convert_coordinates(coords, origin, wgs84):
+    """ Convert coordinates from one crs to another """
     if isinstance(coords, list) or isinstance(coords, tuple):
         try:
             if isinstance(coords[0], list) or isinstance(coords[0], tuple):
@@ -51,6 +53,10 @@ def convert_coordinates(coords, origin, wgs84):
 
 
 def to_latlon(geojson):
+    """
+    Convert a given geojson to wgs84. The original epsg must be included insde the crs
+    tag of geojson
+    """
 
     if isinstance(geojson, dict):
 
@@ -69,13 +75,16 @@ def to_latlon(geojson):
 
 
 def camelcase_underscore(name):
+    """ Convert camelcase names to underscore """
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
 def get_tiles_list(element):
-    """ Returns the list of all tile names from Product_Organisation element
-    in metadata.xml """
+    """
+    Returns the list of all tile names from Product_Organisation element
+    in metadata.xml
+    """
 
     tiles = {}
 
@@ -140,6 +149,7 @@ def metadata_to_dict(metadata):
 
 
 def tile_metadata(tile, product):
+    """ Generate metadata for a given tile """
 
     s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
     grid = 'T{0}{1}{2}'.format(pad(tile['utmZone'], 2), tile['latitudeBand'], tile['gridSquare'])
