@@ -17,6 +17,7 @@ from shapely.ops import cascaded_union
 from shapely.geometry import mapping, Polygon
 
 logger = logging.getLogger('sentinel.meta.s3')
+s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
 
 
 def epsg_code(geojson):
@@ -155,7 +156,7 @@ def metadata_to_dict(metadata):
     return meta
 
 
-def get_tile_geometry(path, origin_espg, tolerance=200):
+def get_tile_geometry(path, origin_espg, tolerance=500):
     """ Calculate the data and tile geometry for sentinel-2 tiles """
 
     with rasterio.open(path) as src:
@@ -193,6 +194,34 @@ def get_tile_geometry(path, origin_espg, tolerance=200):
         return (to_latlon(tile_geojson, origin_espg), to_latlon(data_geojson, origin_espg))
 
 
+def get_tile_geometry_from_s3(meta):
+
+    # create a temp folder
+    tmp_folder = mkdtemp()
+    f = os.path.join(tmp_folder, 'B01.jp2')
+
+    # donwload B01
+    r = requests.get('{0}/{1}/B01.jp2'.format(s3_url, meta['path']), stream=True)
+    chunk_size = 1024
+
+    with open(f, 'wb') as fd:
+        for chunk in r.iter_content(chunk_size):
+            fd.write(chunk)
+
+    (meta['tile_geometry'],
+     meta['tile_data_geometry']) = get_tile_geometry(f, epsg_code(meta['tile_geometry']))
+    meta['tile_origin'] = to_latlon(meta['tile_origin'])
+
+    # remove temp folder
+    try:
+        shutil.rmtree(tmp_folder)
+    except OSError as exc:
+        if exc.errno != errno.ENOENT:
+            raise
+
+    return meta
+
+
 def tile_metadata(tile, product, geometry_check=None):
     """ Generate metadata for a given tile
 
@@ -201,7 +230,6 @@ def tile_metadata(tile, product, geometry_check=None):
     The function return a True or False response.
     """
 
-    s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
     grid = 'T{0}{1}{2}'.format(pad(tile['utmZone'], 2), tile['latitudeBand'], tile['gridSquare'])
 
     meta = OrderedDict({
@@ -237,29 +265,7 @@ def tile_metadata(tile, product, geometry_check=None):
     # change coordinates to wsg4 degrees
     if geometry_check:
         if geometry_check(meta):
-
-            # create a temp folder
-            tmp_folder = mkdtemp()
-            f = os.path.join(tmp_folder, 'B01.jp2')
-
-            # donwload B01
-            r = requests.get('{0}/{1}/B01.jp2'.format(s3_url, meta['path']), stream=True)
-            chunk_size = 1024
-
-            with open(f, 'wb') as fd:
-                for chunk in r.iter_content(chunk_size):
-                    fd.write(chunk)
-
-            (meta['tile_geometry'], meta['tile_data_geometry']) = get_tile_geometry(f,
-                                                                                    epsg_code(meta['tile_geometry']))
-            meta['tile_origin'] = to_latlon(meta['tile_origin'])
-
-            # remove temp folder
-            try:
-                shutil.rmtree(tmp_folder)
-            except OSError as exc:
-                if exc.errno != errno.ENOENT:
-                    raise
+            meta = get_tile_geometry_from_s3(meta)
     else:
 
         for key in keys:
