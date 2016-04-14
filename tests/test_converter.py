@@ -51,6 +51,32 @@ class Test(unittest.TestCase):
         d_link = tile['download_links']['aws_s3'][0].split('.')[-2].split('/')
         assert d_link[-1] == 'B01'
 
+    def test_tile_metadata_with_geometry_check(self):
+
+        def geometry_check(meta):
+            if meta['latitude_band'] == 'N':
+                return False
+
+            return True
+
+        f = open('tests/samples/tileInfo.json', 'rb')
+        tile_info = json.loads(f.read().decode(), object_pairs_hook=OrderedDict)
+
+        tile = tile_metadata(tile_info, metadata_to_dict('tests/samples/metadata.xml'), geometry_check)
+
+        assert isinstance(tile, OrderedDict)
+        assert tile['thumbnail'] == 'http://sentinel-s2-l1c.s3.amazonaws.com/tiles/56/X/NF/2016/3/16/0/preview.jp2'
+        assert tile['tile_name'] == 'S2A_OPER_MSI_L1C_TL_SGS__20160316T054120_A003818_T56XNF_N02.01'
+        assert tile['utm_zone'] == 56
+        assert tile['data_coverage_percentage'] == 65.58
+        assert tile['sensing_orbit_direction'] == 'DESCENDING'
+        assert len(tile['download_links']['aws_s3']) == 13
+        assert tile['tile_origin']['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
+
+        # Make sure bands urls are left padded
+        d_link = tile['download_links']['aws_s3'][0].split('.')[-2].split('/')
+        assert d_link[-1] == 'B01'
+
     def test_to_latlon(self):
 
         geojson = {
