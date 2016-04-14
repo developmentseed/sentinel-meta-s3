@@ -105,13 +105,13 @@ class Test(unittest.TestCase):
             'partial_right': {
                 'path': 'tests/samples/B01_right.jp2',
                 'tile': [-75.3723, -74.8924],
-                'data': [-74.8924, -74.8924],
+                'data': [-75.0555, -75.3723],
                 'epsg': 32618
             },
             'partial_left': {
                 'path': 'tests/samples/B01_left.jp2',
                 'tile': [-65.5913, -65.1366],
-                'data': [-65.5929, -65.2534],
+                'data': [-65.2534, -65.138],
                 'epsg': 32620
             },
             'full': {

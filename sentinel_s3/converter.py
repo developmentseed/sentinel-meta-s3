@@ -170,22 +170,23 @@ def get_tile_geometry(path, origin_espg, tolerance=500):
         image = src.read(1)
 
         # create a mask of zero values
-        mask = image != 0.
+        mask = image == 0.
 
-        # generate shapes of the mask image
-        data_shape = shapes(image, mask=mask, transform=src.affine)
+        # generate shapes of the mask
+        novalue_shape = shapes(image, mask=mask, transform=src.affine)
 
         # generate polygons using shapely
-        data_shape = [Polygon(s['coordinates'][0]) for (s, v) in data_shape]
+        novalue_shape = [Polygon(s['coordinates'][0]) for (s, v) in novalue_shape]
 
-        if data_shape:
+        if novalue_shape:
 
             # Make sure polygons are united
             # also simplify the resulting polygon
-            union = cascaded_union(data_shape).simplify(tolerance, preserve_topology=False)
+            union = cascaded_union(novalue_shape).simplify(tolerance, preserve_topology=False)
 
             # generates a geojson
-            data_geojson = mapping(union)
+            data_shape = tile_shape.symmetric_difference(union)
+            data_geojson = mapping(data_shape)
 
         else:
             data_geojson = tile_geojson
