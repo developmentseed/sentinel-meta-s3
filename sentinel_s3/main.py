@@ -9,7 +9,7 @@ import boto3
 import requests
 from six.moves.queue import Queue
 from six import iteritems, iterkeys
-from sentinel_s3.crawler import get_product_metadata_path
+from sentinel_s3.crawler import get_products_metadata_path, get_product_metadata_path
 from sentinel_s3.converter import metadata_to_dict, tile_metadata
 
 # Python 2 comptability
@@ -54,7 +54,52 @@ def s3_writer(product_dir, metadata):
     object_acl.put(ACL='public-read')
 
 
-def daily_metadata(year, month, day, dst_folder, writers=[file_writer]):
+def product_metadata(product, dst_folder, counter=None, writers=[file_writer], geometry_check=None):
+    """ Extract metadata for a specific product """
+
+    if not counter:
+        counter = {
+            'products': 0,
+            'saved_tiles': 0,
+            'skipped_tiles': 0,
+            'skipped_tiles_paths': []
+        }
+
+    s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
+
+    product_meta_link = '{0}/{1}'.format(s3_url, product['metadata'])
+    product_info = requests.get(product_meta_link, stream=True)
+    product_metadata = metadata_to_dict(product_info.raw)
+    product_metadata['product_meta_link'] = product_meta_link
+
+    counter['products'] += 1
+
+    for tile in product['tiles']:
+        tile_info = requests.get('{0}/{1}'.format(s3_url, tile))
+        try:
+            metadata = tile_metadata(tile_info.json(), copy(product_metadata), geometry_check)
+
+            for w in writers:
+                w(dst_folder, metadata)
+
+            logger.info('Saving to disk: %s' % metadata['tile_name'])
+            counter['saved_tiles'] += 1
+        except JSONDecodeError:
+            logger.warning('Tile: %s was not found and skipped' % tile)
+            counter['skipped_tiles'] += 1
+            counter['skipped_tiles_paths'].append(tile)
+
+    return counter
+
+
+def single_metadata(product_name, dst_folder, writers=[file_writer]):
+
+    product_list = get_product_metadata_path(product_name)
+    return product_metadata(product_list[product_name], dst_folder, writers=writers)
+
+
+def daily_metadata(year, month, day, dst_folder, writers=[file_writer], geometry_check=None):
+    """ Extra metadata for all products in a specific date """
 
     counter = {
         'products': 0,
@@ -68,40 +113,20 @@ def daily_metadata(year, month, day, dst_folder, writers=[file_writer]):
     month_dir = os.path.join(year_dir, str(month))
     day_dir = os.path.join(month_dir, str(day))
 
-    s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
-    product_list = get_product_metadata_path(year, month, day)
+    product_list = get_products_metadata_path(year, month, day)
 
     logger.info('There are %s products in %s-%s-%s' % (len(list(iterkeys(product_list))),
                                                        year, month, day))
 
     for name, product in iteritems(product_list):
-
-        product_info = requests.get('{0}/{1}'.format(s3_url, product['metadata']), stream=True)
-        product_metadata = metadata_to_dict(product_info.raw)
-
-        counter['products'] += 1
-
-        for tile in product['tiles']:
-            tile_info = requests.get('{0}/{1}'.format(s3_url, tile))
-            try:
-                metadata = tile_metadata(tile_info.json(), copy(product_metadata))
-
-                product_dir = os.path.join(day_dir, metadata['product_name'])
-
-                for w in writers:
-                    w(product_dir, metadata)
-
-                logger.info('Saving to disk: %s' % metadata['tile_name'])
-                counter['saved_tiles'] += 1
-            except JSONDecodeError:
-                logger.warning('Tile: %s was not found and skipped' % tile)
-                counter['skipped_tiles'] += 1
-                counter['skipped_tiles_paths'].append(tile)
+        product_dir = os.path.join(day_dir, name)
+        counter = product_metadata(product, product_dir, counter, writers, geometry_check)
 
     return counter
 
 
-def range_metadata(start, end, dst_folder, num_worker_threads=0, writers=[file_writer]):
+def range_metadata(start, end, dst_folder, num_worker_threads=0, writers=[file_writer], geometry_check=None):
+    """ Extra metadata for all products in a date range """
 
     assert isinstance(start, date)
     assert isinstance(end, date)
@@ -139,10 +164,10 @@ def range_metadata(start, end, dst_folder, num_worker_threads=0, writers=[file_w
 
     for d in dates:
         if threaded:
-            queue.put([d.year, d.month, d.day, dst_folder, writers])
+            queue.put([d.year, d.month, d.day, dst_folder, writers, geometry_check])
         else:
             logger.info('Getting metadata of {0}-{1}-{2}'.format(d.year, d.month, d.day))
-            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder, writers))
+            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder, writers, geometry_check))
 
     # run the threads
     if threaded:
