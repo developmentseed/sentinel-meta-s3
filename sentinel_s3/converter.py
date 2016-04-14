@@ -1,9 +1,14 @@
 import re
+import os
+import errno
+import shutil
 import logging
+from tempfile import mkdtemp
 from collections import OrderedDict
 import xml.etree.cElementTree as etree
 
 import rasterio
+import requests
 from wordpad import pad
 from six import iteritems
 from pyproj import Proj, transform
@@ -188,8 +193,13 @@ def get_tile_geometry(path, origin_espg, tolerance=200):
         return (to_latlon(tile_geojson, origin_espg), to_latlon(data_geojson, origin_espg))
 
 
-def tile_metadata(tile, product):
-    """ Generate metadata for a given tile """
+def tile_metadata(tile, product, geometry_check=None):
+    """ Generate metadata for a given tile
+
+    - geometry_check is a function the determines whether to calculate the geometry by downloading
+    B01 and override provided geometry in tilejson. The meta object is passed to this function.
+    The function return a True or False response.
+    """
 
     s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
     grid = 'T{0}{1}{2}'.format(pad(tile['utmZone'], 2), tile['latitudeBand'], tile['gridSquare'])
@@ -221,10 +231,39 @@ def tile_metadata(tile, product):
         'aws_s3': links
     }
 
-    # change coordinates to wsg4 degrees
+    meta['tile_original_meta'] = '{0}/{1}/tileInfo.json'.format(s3_url, meta['path'])
+
     keys = ['tile_origin', 'tile_geometry', 'tile_data_geometry']
-    for key in keys:
-        if key in meta:
-            meta[key] = to_latlon(meta[key])
+    # change coordinates to wsg4 degrees
+    if geometry_check:
+        if geometry_check(meta):
+
+            # create a temp folder
+            tmp_folder = mkdtemp()
+            f = os.path.join(tmp_folder, 'B01.jp2')
+
+            # donwload B01
+            r = requests.get('{0}/{1}/B01.jp2'.format(s3_url, meta['path']), stream=True)
+            chunk_size = 1024
+
+            with open(f, 'wb') as fd:
+                for chunk in r.iter_content(chunk_size):
+                    fd.write(chunk)
+
+            (meta['tile_geometry'], meta['tile_data_geometry']) = get_tile_geometry(f,
+                                                                                    epsg_code(meta['tile_geometry']))
+            meta['tile_origin'] = to_latlon(meta['tile_origin'])
+
+            # remove temp folder
+            try:
+                shutil.rmtree(tmp_folder)
+            except OSError as exc:
+                if exc.errno != errno.ENOENT:
+                    raise
+    else:
+
+        for key in keys:
+            if key in meta:
+                meta[key] = to_latlon(meta[key])
 
     return meta
