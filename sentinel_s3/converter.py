@@ -170,9 +170,9 @@ def get_tile_geometry(path, origin_espg, tolerance=500):
         image = src.read(1)
 
         # create a mask of zero values
-        mask = image == 0.
+        mask = image != 0.
 
-        # generate shapes of the mask
+        # generate shapes of the mask image
         data_shape = shapes(image, mask=mask, transform=src.affine)
 
         # generate polygons using shapely
