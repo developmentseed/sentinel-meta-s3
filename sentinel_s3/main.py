@@ -92,10 +92,10 @@ def product_metadata(product, dst_folder, counter=None, writers=[file_writer], g
     return counter
 
 
-def single_metadata(product_name, dst_folder, writers=[file_writer]):
+def single_metadata(product_name, dst_folder, writers=[file_writer], geometry_check=None):
 
     product_list = get_product_metadata_path(product_name)
-    return product_metadata(product_list[product_name], dst_folder, writers=writers)
+    return product_metadata(product_list[product_name], dst_folder, writers=writers, geometry_check=geometry_check)
 
 
 def daily_metadata(year, month, day, dst_folder, writers=[file_writer], geometry_check=None):
