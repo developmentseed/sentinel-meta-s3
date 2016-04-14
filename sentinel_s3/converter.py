@@ -259,7 +259,7 @@ def tile_metadata(tile, product, geometry_check=None):
         'aws_s3': links
     }
 
-    meta['tile_original_meta'] = '{0}/{1}/tileInfo.json'.format(s3_url, meta['path'])
+    meta['original_tile_meta'] = '{0}/{1}/tileInfo.json'.format(s3_url, meta['path'])
 
     keys = ['tile_origin', 'tile_geometry', 'tile_data_geometry']
     # change coordinates to wsg4 degrees
