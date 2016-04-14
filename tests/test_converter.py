@@ -4,7 +4,8 @@ from copy import copy
 from collections import OrderedDict
 
 from six import iterkeys
-from sentinel_s3.converter import camelcase_underscore, metadata_to_dict, tile_metadata, to_latlon
+from sentinel_s3.converter import (camelcase_underscore, metadata_to_dict, tile_metadata, to_latlon,
+                                   get_tile_geometry)
 
 
 class Test(unittest.TestCase):
@@ -50,6 +51,32 @@ class Test(unittest.TestCase):
         d_link = tile['download_links']['aws_s3'][0].split('.')[-2].split('/')
         assert d_link[-1] == 'B01'
 
+    def test_tile_metadata_with_geometry_check(self):
+
+        def geometry_check(meta):
+            if meta['latitude_band'] == 'N':
+                return False
+
+            return True
+
+        f = open('tests/samples/tileInfo.json', 'rb')
+        tile_info = json.loads(f.read().decode(), object_pairs_hook=OrderedDict)
+
+        tile = tile_metadata(tile_info, metadata_to_dict('tests/samples/metadata.xml'), geometry_check)
+
+        assert isinstance(tile, OrderedDict)
+        assert tile['thumbnail'] == 'http://sentinel-s2-l1c.s3.amazonaws.com/tiles/56/X/NF/2016/3/16/0/preview.jp2'
+        assert tile['tile_name'] == 'S2A_OPER_MSI_L1C_TL_SGS__20160316T054120_A003818_T56XNF_N02.01'
+        assert tile['utm_zone'] == 56
+        assert tile['data_coverage_percentage'] == 65.58
+        assert tile['sensing_orbit_direction'] == 'DESCENDING'
+        assert len(tile['download_links']['aws_s3']) == 13
+        assert tile['tile_origin']['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
+
+        # Make sure bands urls are left padded
+        d_link = tile['download_links']['aws_s3'][0].split('.')[-2].split('/')
+        assert d_link[-1] == 'B01'
+
     def test_to_latlon(self):
 
         geojson = {
@@ -71,3 +98,51 @@ class Test(unittest.TestCase):
         gj = to_latlon(copy(geojson))
         assert gj['coordinates'][0][0] != geojson['coordinates'][0][0]
         assert gj['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
+
+    def test_get_tile_geometry(self):
+
+        tiles = {
+            'partial_right': {
+                'path': 'tests/samples/B01_right.jp2',
+                'tile': [-75.3723, -74.8924],
+                'data': [-74.8924, -74.8924],
+                'epsg': 32618
+            },
+            'partial_left': {
+                'path': 'tests/samples/B01_left.jp2',
+                'tile': [-65.5913, -65.1366],
+                'data': [-65.5929, -65.2534],
+                'epsg': 32620
+            },
+            'full': {
+                'path': 'tests/samples/B01_full.jp2',
+                'tile': [-67.4893, -67.4893],
+                'data': [-67.4893, -67.4893],
+                'epsg': 32620
+            },
+        }
+
+        for t in iterkeys(tiles):
+            print(t)
+            (tile, data) = get_tile_geometry(tiles[t]['path'], tiles[t]['epsg'])
+
+            fc = {
+                'type': 'FeatureCollection',
+                'features': []
+            }
+
+            for g in [tile, data]:
+                f = {
+                    'type': 'Feature',
+                    'properties': {},
+                    'geometry': g
+                }
+                fc['features'].append(f)
+
+            # uncommen to write the results to disk for testing
+            # f = open('test_%s.geojson' % t, 'w')
+            # f.write(json.dumps(fc))
+
+            for i in range(0, 2):
+                self.assertEqual(tiles[t]['tile'][i], round(tile['coordinates'][0][i][0], 4))
+                self.assertEqual(tiles[t]['data'][i], round(data['coordinates'][0][i][0], 4))

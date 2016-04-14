@@ -1,29 +1,27 @@
 import re
+import os
+import errno
+import shutil
 import logging
+from tempfile import mkdtemp
 from collections import OrderedDict
 import xml.etree.cElementTree as etree
 
-from pyproj import Proj, transform
+import rasterio
+import requests
+from wordpad import pad
 from six import iteritems
-
+from pyproj import Proj, transform
+from rasterio.features import shapes
+from shapely.ops import cascaded_union
+from shapely.geometry import mapping, Polygon
 
 logger = logging.getLogger('sentinel.meta.s3')
-
-
-def pad(value, width, char='0', direction='left'):
-
-    value = str(value)
-
-    while len(value) < width:
-        if direction == 'left':
-            value = '{0}{1}'.format(char, value)
-        else:
-            value = '{1}{0}'.format(char, value)
-
-    return value
+s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
 
 
 def epsg_code(geojson):
+    """ get the espg code from the crs system """
 
     if isinstance(geojson, dict):
         if 'crs' in geojson:
@@ -38,10 +36,11 @@ def epsg_code(geojson):
 
 
 def convert_coordinates(coords, origin, wgs84):
-    if isinstance(coords, list):
+    """ Convert coordinates from one crs to another """
+    if isinstance(coords, list) or isinstance(coords, tuple):
         try:
-            if isinstance(coords[0], list):
-                return [convert_coordinates(c, origin, wgs84) for c in coords]
+            if isinstance(coords[0], list) or isinstance(coords[0], tuple):
+                return [convert_coordinates(list(c), origin, wgs84) for c in coords]
             elif isinstance(coords[0], float):
                 return list(transform(origin, wgs84, *coords))
         except IndexError:
@@ -50,12 +49,19 @@ def convert_coordinates(coords, origin, wgs84):
     return None
 
 
-def to_latlon(geojson):
+def to_latlon(geojson, origin_espg=None):
+    """
+    Convert a given geojson to wgs84. The original epsg must be included insde the crs
+    tag of geojson
+    """
 
     if isinstance(geojson, dict):
 
         # get epsg code:
-        code = epsg_code(geojson)
+        if origin_espg:
+            code = origin_espg
+        else:
+            code = epsg_code(geojson)
         if code:
             origin = Proj(init='epsg:%s' % code)
             wgs84 = Proj(init='epsg:4326')
@@ -63,19 +69,30 @@ def to_latlon(geojson):
             new_coords = convert_coordinates(geojson['coordinates'], origin, wgs84)
             if new_coords:
                 geojson['coordinates'] = new_coords
-                geojson['crs']['properties']['name'] = 'urn:ogc:def:crs:EPSG:8.9:4326'
+                if 'crs' not in geojson:
+                    geojson['crs'] = {
+                        'type': 'name',
+                        'properties': {
+                            'name': 'urn:ogc:def:crs:EPSG:8.9:4326'
+                        }
+                    }
+                else:
+                    geojson['crs']['properties']['name'] = 'urn:ogc:def:crs:EPSG:8.9:4326'
 
     return geojson
 
 
 def camelcase_underscore(name):
+    """ Convert camelcase names to underscore """
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
 def get_tiles_list(element):
-    """ Returns the list of all tile names from Product_Organisation element
-    in metadata.xml """
+    """
+    Returns the list of all tile names from Product_Organisation element
+    in metadata.xml
+    """
 
     tiles = {}
 
@@ -139,9 +156,80 @@ def metadata_to_dict(metadata):
     return meta
 
 
-def tile_metadata(tile, product):
+def get_tile_geometry(path, origin_espg, tolerance=500):
+    """ Calculate the data and tile geometry for sentinel-2 tiles """
 
-    s3_url = 'http://sentinel-s2-l1c.s3.amazonaws.com'
+    with rasterio.open(path) as src:
+
+        # Get tile geometry
+        b = src.bounds
+        tile_shape = Polygon([(b[0], b[1]), (b[2], b[1]), (b[2], b[3]), (b[0], b[3]), (b[0], b[1])])
+        tile_geojson = mapping(tile_shape)
+
+        # read first band of the image
+        image = src.read(1)
+
+        # create a mask of zero values
+        mask = image == 0.
+
+        # generate shapes of the mask
+        data_shape = shapes(image, mask=mask, transform=src.affine)
+
+        # generate polygons using shapely
+        data_shape = [Polygon(s['coordinates'][0]) for (s, v) in data_shape]
+
+        if data_shape:
+
+            # Make sure polygons are united
+            # also simplify the resulting polygon
+            union = cascaded_union(data_shape).simplify(tolerance, preserve_topology=False)
+
+            # generates a geojson
+            data_geojson = mapping(union)
+
+        else:
+            data_geojson = tile_geojson
+
+        # convert cooridnates to degrees
+        return (to_latlon(tile_geojson, origin_espg), to_latlon(data_geojson, origin_espg))
+
+
+def get_tile_geometry_from_s3(meta):
+
+    # create a temp folder
+    tmp_folder = mkdtemp()
+    f = os.path.join(tmp_folder, 'B01.jp2')
+
+    # donwload B01
+    r = requests.get('{0}/{1}/B01.jp2'.format(s3_url, meta['path']), stream=True)
+    chunk_size = 1024
+
+    with open(f, 'wb') as fd:
+        for chunk in r.iter_content(chunk_size):
+            fd.write(chunk)
+
+    (meta['tile_geometry'],
+     meta['tile_data_geometry']) = get_tile_geometry(f, epsg_code(meta['tile_geometry']))
+    meta['tile_origin'] = to_latlon(meta['tile_origin'])
+
+    # remove temp folder
+    try:
+        shutil.rmtree(tmp_folder)
+    except OSError as exc:
+        if exc.errno != errno.ENOENT:
+            raise
+
+    return meta
+
+
+def tile_metadata(tile, product, geometry_check=None):
+    """ Generate metadata for a given tile
+
+    - geometry_check is a function the determines whether to calculate the geometry by downloading
+    B01 and override provided geometry in tilejson. The meta object is passed to this function.
+    The function return a True or False response.
+    """
+
     grid = 'T{0}{1}{2}'.format(pad(tile['utmZone'], 2), tile['latitudeBand'], tile['gridSquare'])
 
     meta = OrderedDict({
@@ -171,10 +259,17 @@ def tile_metadata(tile, product):
         'aws_s3': links
     }
 
-    # change coordinates to wsg4 degrees
+    meta['tile_original_meta'] = '{0}/{1}/tileInfo.json'.format(s3_url, meta['path'])
+
     keys = ['tile_origin', 'tile_geometry', 'tile_data_geometry']
-    for key in keys:
-        if key in meta:
-            meta[key] = to_latlon(meta[key])
+    # change coordinates to wsg4 degrees
+    if geometry_check:
+        if geometry_check(meta):
+            meta = get_tile_geometry_from_s3(meta)
+    else:
+
+        for key in keys:
+            if key in meta:
+                meta[key] = to_latlon(meta[key])
 
     return meta
