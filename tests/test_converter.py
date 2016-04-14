@@ -139,7 +139,7 @@ class Test(unittest.TestCase):
                 }
                 fc['features'].append(f)
 
-            # uncommen to write the results to disk for testing
+            # # uncommen to write the results to disk for testing
             # f = open('test_%s.geojson' % t, 'w')
             # f.write(json.dumps(fc))
 

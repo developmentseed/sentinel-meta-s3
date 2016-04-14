@@ -261,15 +261,20 @@ def tile_metadata(tile, product, geometry_check=None):
 
     meta['original_tile_meta'] = '{0}/{1}/tileInfo.json'.format(s3_url, meta['path'])
 
-    keys = ['tile_origin', 'tile_geometry', 'tile_data_geometry']
+    def internal_latlon(meta):
+        keys = ['tile_origin', 'tile_geometry', 'tile_data_geometry']
+        for key in keys:
+            if key in meta:
+                meta[key] = to_latlon(meta[key])
+        return meta
+
     # change coordinates to wsg4 degrees
     if geometry_check:
         if geometry_check(meta):
             meta = get_tile_geometry_from_s3(meta)
+        else:
+            meta = internal_latlon(meta)
     else:
-
-        for key in keys:
-            if key in meta:
-                meta[key] = to_latlon(meta[key])
+        meta = internal_latlon(meta)
 
     return meta
