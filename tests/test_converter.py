@@ -120,6 +120,12 @@ class Test(unittest.TestCase):
                 'data': [-67.4893, -67.4893],
                 'epsg': 32620
             },
+            'edge_case': {
+                'path': 'tests/samples/B01_multi.jp2',
+                'tile': [-69.0002, -68.8339],
+                'data': [-68.9683, -68.8339],
+                'epsg': 32619
+            },
         }
 
         for t in iterkeys(tiles):
@@ -139,9 +145,9 @@ class Test(unittest.TestCase):
                 }
                 fc['features'].append(f)
 
-            # uncommen to write the results to disk for testing
-            f = open('test_%s.geojson' % t, 'w')
-            f.write(json.dumps(fc))
+            # # uncommen to write the results to disk for testing
+            # f = open('test_%s.geojson' % t, 'w')
+            # f.write(json.dumps(fc))
 
             for i in range(0, 2):
                 self.assertEqual(tiles[t]['tile'][i], round(tile['coordinates'][0][i][0], 4))

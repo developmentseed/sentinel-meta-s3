@@ -185,7 +185,19 @@ def get_tile_geometry(path, origin_espg, tolerance=500):
             union = cascaded_union(novalue_shape)
 
             # generates a geojson
-            data_shape = tile_shape.difference(union).simplify(tolerance, preserve_topology=False)
+            data_shape = tile_shape.difference(union)
+
+            # If there are multipolygons, select the largest one
+            if data_shape.geom_type == 'MultiPolygon':
+                areas = {p.area: i for i, p in enumerate(data_shape)}
+                largest = max(areas.keys())
+                data_shape = data_shape[areas[largest]]
+
+            # if the polygon has interior rings, remove them
+            if list(data_shape.interiors):
+                data_shape = Polygon(data_shape.exterior.coords)
+
+            data_shape = data_shape.simplify(tolerance, preserve_topology=False)
             data_geojson = mapping(data_shape)
 
         else:
