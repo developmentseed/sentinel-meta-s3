@@ -182,10 +182,10 @@ def get_tile_geometry(path, origin_espg, tolerance=500):
 
             # Make sure polygons are united
             # also simplify the resulting polygon
-            union = cascaded_union(novalue_shape).simplify(tolerance, preserve_topology=False)
+            union = cascaded_union(novalue_shape)
 
             # generates a geojson
-            data_shape = tile_shape.symmetric_difference(union)
+            data_shape = tile_shape.difference(union).simplify(tolerance, preserve_topology=False)
             data_geojson = mapping(data_shape)
 
         else:

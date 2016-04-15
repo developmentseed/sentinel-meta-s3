@@ -110,8 +110,8 @@ class Test(unittest.TestCase):
             },
             'partial_left': {
                 'path': 'tests/samples/B01_left.jp2',
-                'tile': [-65.5913, -65.1366],
-                'data': [-65.2534, -65.138],
+                'tile': [-62.1004, -61.113],
+                'data': [-62.1002, -62.0978],
                 'epsg': 32620
             },
             'full': {
@@ -131,7 +131,7 @@ class Test(unittest.TestCase):
                 'features': []
             }
 
-            for g in [tile, data]:
+            for g in [data]:
                 f = {
                     'type': 'Feature',
                     'properties': {},
@@ -139,9 +139,9 @@ class Test(unittest.TestCase):
                 }
                 fc['features'].append(f)
 
-            # # uncommen to write the results to disk for testing
-            # f = open('test_%s.geojson' % t, 'w')
-            # f.write(json.dumps(fc))
+            # uncommen to write the results to disk for testing
+            f = open('test_%s.geojson' % t, 'w')
+            f.write(json.dumps(fc))
 
             for i in range(0, 2):
                 self.assertEqual(tiles[t]['tile'][i], round(tile['coordinates'][0][i][0], 4))
