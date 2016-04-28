@@ -3,6 +3,7 @@ import os
 import errno
 import shutil
 import logging
+import threading
 from tempfile import mkdtemp
 from collections import OrderedDict
 import xml.etree.cElementTree as etree
@@ -249,7 +250,7 @@ def tile_metadata(tile, product, geometry_check=None):
         'tile_name': product['tiles'][grid]
     })
 
-    logger.info('Processing tile %s' % meta['tile_name'])
+    logger.info('%s Processing tile %s' % (threading.current_thread().name, tile['path']))
 
     meta['date'] = tile['timestamp'].split('T')[0]
 
