@@ -3,6 +3,7 @@ import os
 import errno
 import shutil
 import logging
+import threading
 from tempfile import mkdtemp
 from collections import OrderedDict
 import xml.etree.cElementTree as etree
@@ -173,19 +174,32 @@ def get_tile_geometry(path, origin_espg, tolerance=500):
         mask = image == 0.
 
         # generate shapes of the mask
-        data_shape = shapes(image, mask=mask, transform=src.affine)
+        novalue_shape = shapes(image, mask=mask, transform=src.affine)
 
         # generate polygons using shapely
-        data_shape = [Polygon(s['coordinates'][0]) for (s, v) in data_shape]
+        novalue_shape = [Polygon(s['coordinates'][0]) for (s, v) in novalue_shape]
 
-        if data_shape:
+        if novalue_shape:
 
             # Make sure polygons are united
             # also simplify the resulting polygon
-            union = cascaded_union(data_shape).simplify(tolerance, preserve_topology=False)
+            union = cascaded_union(novalue_shape)
 
             # generates a geojson
-            data_geojson = mapping(union)
+            data_shape = tile_shape.difference(union)
+
+            # If there are multipolygons, select the largest one
+            if data_shape.geom_type == 'MultiPolygon':
+                areas = {p.area: i for i, p in enumerate(data_shape)}
+                largest = max(areas.keys())
+                data_shape = data_shape[areas[largest]]
+
+            # if the polygon has interior rings, remove them
+            if list(data_shape.interiors):
+                data_shape = Polygon(data_shape.exterior.coords)
+
+            data_shape = data_shape.simplify(tolerance, preserve_topology=False)
+            data_geojson = mapping(data_shape)
 
         else:
             data_geojson = tile_geojson
@@ -236,7 +250,7 @@ def tile_metadata(tile, product, geometry_check=None):
         'tile_name': product['tiles'][grid]
     })
 
-    logger.info('Processing tile %s' % meta['tile_name'])
+    logger.info('%s Processing tile %s' % (threading.current_thread().name, tile['path']))
 
     meta['date'] = tile['timestamp'].split('T')[0]
 
@@ -261,15 +275,20 @@ def tile_metadata(tile, product, geometry_check=None):
 
     meta['original_tile_meta'] = '{0}/{1}/tileInfo.json'.format(s3_url, meta['path'])
 
-    keys = ['tile_origin', 'tile_geometry', 'tile_data_geometry']
+    def internal_latlon(meta):
+        keys = ['tile_origin', 'tile_geometry', 'tile_data_geometry']
+        for key in keys:
+            if key in meta:
+                meta[key] = to_latlon(meta[key])
+        return meta
+
     # change coordinates to wsg4 degrees
     if geometry_check:
         if geometry_check(meta):
             meta = get_tile_geometry_from_s3(meta)
+        else:
+            meta = internal_latlon(meta)
     else:
-
-        for key in keys:
-            if key in meta:
-                meta[key] = to_latlon(meta[key])
+        meta = internal_latlon(meta)
 
     return meta

@@ -105,13 +105,13 @@ class Test(unittest.TestCase):
             'partial_right': {
                 'path': 'tests/samples/B01_right.jp2',
                 'tile': [-75.3723, -74.8924],
-                'data': [-74.8924, -74.8924],
+                'data': [-75.0555, -75.3723],
                 'epsg': 32618
             },
             'partial_left': {
                 'path': 'tests/samples/B01_left.jp2',
-                'tile': [-65.5913, -65.1366],
-                'data': [-65.5929, -65.2534],
+                'tile': [-62.1004, -61.113],
+                'data': [-62.1002, -62.0978],
                 'epsg': 32620
             },
             'full': {
@@ -119,6 +119,12 @@ class Test(unittest.TestCase):
                 'tile': [-67.4893, -67.4893],
                 'data': [-67.4893, -67.4893],
                 'epsg': 32620
+            },
+            'edge_case': {
+                'path': 'tests/samples/B01_multi.jp2',
+                'tile': [-69.0002, -68.8339],
+                'data': [-68.9683, -68.8339],
+                'epsg': 32619
             },
         }
 
@@ -131,7 +137,7 @@ class Test(unittest.TestCase):
                 'features': []
             }
 
-            for g in [tile, data]:
+            for g in [data]:
                 f = {
                     'type': 'Feature',
                     'properties': {},
@@ -139,7 +145,7 @@ class Test(unittest.TestCase):
                 }
                 fc['features'].append(f)
 
-            # uncommen to write the results to disk for testing
+            # # uncommen to write the results to disk for testing
             # f = open('test_%s.geojson' % t, 'w')
             # f.write(json.dumps(fc))
 
