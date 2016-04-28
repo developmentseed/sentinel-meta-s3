@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import logging
 import threading
@@ -98,8 +99,11 @@ def single_metadata(product_name, dst_folder, writers=[file_writer], geometry_ch
     return product_metadata(product_list[product_name], dst_folder, writers=writers, geometry_check=geometry_check)
 
 
-def daily_metadata(year, month, day, dst_folder, writers=[file_writer], geometry_check=None):
+def daily_metadata(year, month, day, dst_folder, writers=[file_writer], geometry_check=None,
+                   num_worker_threads=1):
     """ Extra metadata for all products in a specific date """
+
+    threaded = False
 
     counter = {
         'products': 0,
@@ -107,6 +111,10 @@ def daily_metadata(year, month, day, dst_folder, writers=[file_writer], geometry
         'skipped_tiles': 0,
         'skipped_tiles_paths': []
     }
+
+    if num_worker_threads > 1:
+        threaded = True
+        queue = Queue()
 
     # create folders
     year_dir = os.path.join(dst_folder, str(year))
@@ -120,7 +128,32 @@ def daily_metadata(year, month, day, dst_folder, writers=[file_writer], geometry
 
     for name, product in iteritems(product_list):
         product_dir = os.path.join(day_dir, name)
-        counter = product_metadata(product, product_dir, counter, writers, geometry_check)
+
+        if threaded:
+            queue.put([product, product_dir, counter, writers, geometry_check])
+        else:
+            counter = product_metadata(product, product_dir, counter, writers, geometry_check)
+
+    if threaded:
+        def worker():
+            while not queue.empty():
+                args = queue.get()
+                try:
+                    product_metadata(*args)
+                except Exception:
+                    exc = sys.exc_info()
+                    logger.error('%s tile skipped due to error: %s' % (threading.current_thread().name,
+                                                                       exc[1].__str__()))
+                    args[2]['skipped_tiles'] += 1
+                queue.task_done()
+
+        threads = []
+        for i in range(num_worker_threads):
+            t = threading.Thread(target=worker)
+            t.start()
+            threads.append(t)
+
+        queue.join()
 
     return counter
 
@@ -130,15 +163,6 @@ def range_metadata(start, end, dst_folder, num_worker_threads=0, writers=[file_w
 
     assert isinstance(start, date)
     assert isinstance(end, date)
-    threaded = False
-
-    # threads over 5 are capped at 20
-    if num_worker_threads > 20:
-        num_worker_threads = 20
-
-    if num_worker_threads > 0:
-        threaded = True
-        queue = Queue()
 
     delta = end - start
 
@@ -163,28 +187,8 @@ def range_metadata(start, end, dst_folder, num_worker_threads=0, writers=[file_w
                 total_counter[key] += counter[key]
 
     for d in dates:
-        if threaded:
-            queue.put([d.year, d.month, d.day, dst_folder, writers, geometry_check])
-        else:
-            logger.info('Getting metadata of {0}-{1}-{2}'.format(d.year, d.month, d.day))
-            update_counter(daily_metadata(d.year, d.month, d.day, dst_folder, writers, geometry_check))
-
-    # run the threads
-    if threaded:
-        def worker():
-            while not queue.empty():
-                args = queue.get()
-                logger.info('Getting metadata of {0}-{1}-{2}'.format(*args[:3]))
-                update_counter(daily_metadata(*args))
-                queue.task_done()
-
-        threads = []
-        for i in range(num_worker_threads):
-            t = threading.Thread(target=worker)
-            t.start()
-            threads.append(t)
-
-        # block until all tasks are done
-        queue.join()
+        logger.info('Getting metadata of {0}-{1}-{2}'.format(d.year, d.month, d.day))
+        update_counter(daily_metadata(d.year, d.month, d.day, dst_folder, writers, geometry_check,
+                                      num_worker_threads))
 
     return total_counter
