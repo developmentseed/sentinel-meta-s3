@@ -291,4 +291,7 @@ def tile_metadata(tile, product, geometry_check=None):
     else:
         meta = internal_latlon(meta)
 
+    # rename path key to aws_path
+    meta['aws_path'] = meta.pop('path')
+
     return meta
