@@ -19,21 +19,21 @@ class Test(unittest.TestCase):
         metadata = v[keys[0]]['metadata'].split('/')
         tiles = v[keys[0]]['tiles'][0].split('/')
 
-        assert metadata[-1] == 'metadata.xml'
-        assert tiles[-1] == 'tileInfo.json'
-        assert len(v[product]['tiles']) == 2
+        self.assertEqual(metadata[-1], 'metadata.xml')
+        self.assertEqual(tiles[-1], 'tileInfo.json')
+        self.assertEqual(len(v[product]['tiles']), 2)
 
     def test_get_products_metadata_path(self):
 
         v = get_products_metadata_path(2015, 9, 2)
 
         keys = list(iterkeys(v))
-        assert len(keys) == 14
-        assert 'tiles' in v[keys[0]]
-        assert 'metadata' in v[keys[0]]
+        self.assertEqual(len(keys), 69)
+        self.assertTrue('tiles' in v[keys[0]])
+        self.assertTrue('metadata' in v[keys[0]])
 
         metadata = v[keys[0]]['metadata'].split('/')
         tiles = v[keys[0]]['tiles'][0].split('/')
 
-        assert metadata[-1] == 'metadata.xml'
-        assert tiles[-1] == 'tileInfo.json'
+        self.assertEqual(metadata[-1], 'metadata.xml')
+        self.assertEqual(tiles[-1], 'tileInfo.json')
