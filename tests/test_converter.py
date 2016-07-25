@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 from six import iterkeys
 from sentinel_s3.converter import (camelcase_underscore, metadata_to_dict, tile_metadata, to_latlon,
-                                   get_tile_geometry)
+                                   get_tile_geometry, convert_coordinates)
 
 
 class Test(unittest.TestCase):
@@ -76,6 +76,59 @@ class Test(unittest.TestCase):
         # Make sure bands urls are left padded
         d_link = tile['download_links']['aws_s3'][0].split('.')[-2].split('/')
         assert d_link[-1] == 'B01'
+
+    def test_to_latlon_edge_of_coordinate_system(self):
+
+        geojson = {
+            "type": "Polygon",
+            "crs": {
+                "type": "name",
+                "properties": {
+                    "name": "urn:ogc:def:crs:EPSG:8.8.1:32601"
+                }
+            },
+            "coordinates": [
+                [
+                    [
+                        336706.875271381,
+                        7799999.0
+                    ],
+                    [
+                        409799.0,
+                        7799999.0
+                    ],
+                    [
+                        409799.0,
+                        7690201.0
+                    ],
+                    [
+                        300001.0,
+                        7690201.0
+                    ],
+                    [
+                        300001.0,
+                        7728957.392986406
+                    ],
+                    [
+                        315164.079827873,
+                        7758207.990416902
+                    ],
+                    [
+                        330501.865974295,
+                        7787926.032465892
+                    ],
+                    [
+                        336706.875271381,
+                        7799999.0
+                    ]
+                ]
+            ]
+        }
+
+        gj = to_latlon(copy(geojson))
+        self.assertNotEqual(gj['coordinates'][0][0], geojson['coordinates'][0][0])
+        self.assertEqual(gj['crs']['properties']['name'], 'urn:ogc:def:crs:EPSG:8.9:4326')
+        self.assertAlmostEqual(gj['coordinates'][0][1][0], 180.60306, 4)
 
     def test_to_latlon(self):
 

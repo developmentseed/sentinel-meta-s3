@@ -28,7 +28,7 @@ class Test(unittest.TestCase):
         v = get_products_metadata_path(2015, 9, 2)
 
         keys = list(iterkeys(v))
-        self.assertEqual(len(keys), 69)
+        self.assertTrue(len(keys) > 69)
         self.assertTrue('tiles' in v[keys[0]])
         self.assertTrue('metadata' in v[keys[0]])
 

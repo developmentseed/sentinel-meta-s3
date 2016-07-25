@@ -43,7 +43,11 @@ def convert_coordinates(coords, origin, wgs84):
             if isinstance(coords[0], list) or isinstance(coords[0], tuple):
                 return [convert_coordinates(list(c), origin, wgs84) for c in coords]
             elif isinstance(coords[0], float):
-                return list(transform(origin, wgs84, *coords))
+                c = list(transform(origin, wgs84, *coords))
+                if c[0] < -170:
+                    c[0] = c[0] + 360
+                return c
+
         except IndexError:
             pass
 
