@@ -102,7 +102,7 @@ def get_tiles_list(element):
     tiles = {}
 
     for el in element:
-        g = el.findall('.//Granules')[0]
+        g = (el.findall('.//Granules') or el.findall('.//Granule'))[0]
         name = g.attrib['granuleIdentifier']
 
         name_parts = name.split('_')
@@ -148,15 +148,26 @@ def metadata_to_dict(metadata):
     meta['tiles'] = get_tiles_list(root.findall('.//Product_Organisation')[0])
 
     # get available bands
-    bands = root.findall('.//Band_List')[0]
-    meta['band_list'] = []
-    for b in bands:
-        band = b.text.replace('B', '')
-        if len(band) == 1:
-            band = 'B' + pad(band, 2)
-        else:
-            band = b.text
-        meta['band_list'].append(band)
+    if root.findall('.//Band_List'):
+        bands = root.findall('.//Band_List')[0]
+        meta['band_list'] = []
+        for b in bands:
+            band = b.text.replace('B', '')
+            if len(band) == 1:
+                band = 'B' + pad(band, 2)
+            else:
+                band = b.text
+            meta['band_list'].append(band)
+    else:
+        bands = root.findall('.//Spectral_Information_List')[0]
+        meta['band_list'] = []
+        for b in bands:
+            band = b.attrib['physicalBand'].replace('B', '')
+            if len(band) == 1:
+                band = 'B' + pad(band, 2)
+            else:
+                band = b.attrib['physicalBand']
+            meta['band_list'].append(band)
 
     return meta
 
