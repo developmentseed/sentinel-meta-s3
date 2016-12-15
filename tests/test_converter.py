@@ -43,7 +43,7 @@ class Test(unittest.TestCase):
         assert len(product['band_list']) == 13
 
         tiles = list(iterkeys(product['tiles']))
-        assert len(tiles) == 20
+        assert len(tiles) == 1
 
     def test_tile_metadata(self):
 
