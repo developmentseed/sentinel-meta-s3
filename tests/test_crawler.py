@@ -23,6 +23,23 @@ class Test(unittest.TestCase):
         self.assertEqual(tiles[-1], 'tileInfo.json')
         self.assertEqual(len(v[product]['tiles']), 2)
 
+    def test_get_product_metadata_path_new_format(self):
+        product = 'S2A_MSIL1C_20161211T190342_N0204_R113_T10SDG_20161211T190344'
+        v = get_product_metadata_path(product)
+
+        keys = list(iterkeys(v))
+        assert len(keys) == 1
+        assert 'tiles' in v[keys[0]]
+        assert 'metadata' in v[keys[0]]
+        assert keys[0] == product
+
+        metadata = v[keys[0]]['metadata'].split('/')
+        tiles = v[keys[0]]['tiles'][0].split('/')
+
+        self.assertEqual(metadata[-1], 'metadata.xml')
+        self.assertEqual(tiles[-1], 'tileInfo.json')
+        self.assertEqual(len(v[product]['tiles']), 1)
+
     def test_get_products_metadata_path(self):
 
         v = get_products_metadata_path(2015, 9, 2)

@@ -31,6 +31,20 @@ class Test(unittest.TestCase):
         tiles = list(iterkeys(product['tiles']))
         assert len(tiles) == 20
 
+    def test_metadata_to_dict_new_format(self):
+
+        xml = open('tests/samples/metadata_new.xml')
+        product = metadata_to_dict(xml)
+
+        assert isinstance(product, OrderedDict)
+        assert 'band_list' in product
+        assert 'tiles' in product
+        assert product['spacecraft_name'] == 'Sentinel-2A'
+        assert len(product['band_list']) == 13
+
+        tiles = list(iterkeys(product['tiles']))
+        assert len(tiles) == 1
+
     def test_tile_metadata(self):
 
         f = open('tests/samples/tileInfo.json', 'rb')
