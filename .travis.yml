@@ -3,7 +3,6 @@ python:
 - '2.7'
 - '3.4'
 - '3.5'
-
 addons:
   apt:
     packages:
@@ -12,14 +11,13 @@ addons:
     - libgdal-dev
     - libgeos-dev
     - python-numpy
-
 script:
 - python setup.py test
 deploy:
   provider: pypi
   user: devseed
   password:
-    secure: FJQuM5xRJWzTVFUbN/JOzMKD6c/CUOE6doNtS6QR1HNOp+s+o1SRs2UqYwN9tcs0b8yNor1UHLnjx4YiAWxQFCC9ReUqqzVQar0NLS0d6IY30Dlk/ZhbbArmBhj6Lyyhsp3YlF9vryii76z+h9o5W5wLcxJLnxj/xmpq++uHn81jW4ZOeyAHJ0wrZatOxu2efJQB19J+PKqZC+8Pz0rc+Xye41B0Ekt3la/Ra9cA8OUEkwkDhamCQNQQlnuElu6IWabJrYIXg23S76oRf89AjOOFTBsOn16Y+rc6hqksDdsDrVF5hUjMo43Z/HUp5oukbd3hAfuBsaKns8zAmFQmwwIW9mtDV/NsU2f19fUfXyjSSxG51gkQz47hINxFEeWY6A9XJ0hoIFCMKxwPp8Qd12EhjwWOLopquukEGL8d1AtZeX1I7UKC5fFEgBZHSm7rT8rBSwLrze9N1s+O6tbWDBAVv9tpkmmeYgdYfUvkMOjKX+J4U6ngtQm5ZOo/Otd0quXtNY+EP4B48exumvHDcoNmkSEPHBdrWDaAki7WDn96OCfSmA/DisEhPq4sdcuSdD6rMyuo/eLmYNuPHYPk6AS8ghR85eU/dstKHqpeBrw5bDIl88wKcXJzxraTzudegiVWWDNTbYtLzD24M0DRQ8z4F4Ulvw3xiKROWoG9BTI=
+    secure: GH1pYO11lqxM3uuo/n1ll5d6oHEXZI7Ok3YwSfd3WFVeBZj1WWxfnAqBYUjzcoyQJeWbkVXhw1UIYjqkqxsqRXIVll6rgDlDFSZa8rRC4xJfK9Dv1XZxK79OAQM4IDV+NQe+l/xLzwM6cxjhPxYXsO8UMxefPvroqglObQEFXl+JisaPVYjL8qv0i63MU0w+TqpVuhtbqzl17Y1sYRCyPcntBN2pWUQdTdTPwnmHC/W+9nzBIO0t4LeZ8tvCC5OziU3kl9VFaNsUpTAiu6qDIJFgyKIN1NOTssSwmnfOuF70sXxr45SF0os1BwdKMAaE36CNCGMpmsAW9HknsvOAdgRfWM1EhKxBfBXj90hJ0rY91Rp4sCH6xn7zlspsT5xk7OrpPL9jZtbnC6oPgffVyBLu8q3xpYdzZwMyjIA00Zt9om3OPRlfCDUF3D7iodFwHLqn1qccF0CG1T7K4VsqMSosOoUpTT+LkSr/QciY2wh8J2MinWSZ+WtGWqGyJibEG29V8Qm5vklDcYswRiLp5t243UxVgI/L446gM5cew3cbrPPYSkJmbdSCTtkhJp/HtSG2SKczswW4A4/Ut4jQ+6rjSYarZHU6YNJxYcovMefIAwHmSMBWO3F7Uyrt59XIkrRCGiTRZkpBz5AP8N9dmK+WAxfHV++TH9NOyKEAWWk=
   on:
     distributions: sdist bdist_wheel
     repo: developmentseed/sentinel-s3
