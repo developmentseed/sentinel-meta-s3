@@ -42,7 +42,7 @@ def test_wrap_coordinates(coords, origin, wgs84):
     lon_over_plus_170 = False
 
     for c in coords[0]:
-        c = list(transform(origin, wgs84, *coords))
+        c = list(transform(origin, wgs84, *c))
         if c[0] < -170:
             lon_under_minus_170 = True
         elif c[0] > 170:
