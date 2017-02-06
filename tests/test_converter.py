@@ -93,6 +93,12 @@ class Test(unittest.TestCase):
 
         geojson = {
             "type": "Polygon",
+            "crs": {
+                "type": "name",
+                "properties": {
+                    "name": "urn:ogc:def:crs:EPSG:8.8.1:32601"
+                }
+            },
             "coordinates": [
                 [
                     [
