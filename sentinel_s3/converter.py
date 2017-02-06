@@ -40,13 +40,15 @@ def test_wrap_coordinates(coords, origin, wgs84):
     """ Test whether coordinates wrap around the antimeridian in wgs84 """
     lon_under_minus_170 = False
     lon_over_plus_170 = False
-
-    for c in coords[0]:
-        c = list(transform(origin, wgs84, *c))
-        if c[0] < -170:
-            lon_under_minus_170 = True
-        elif c[0] > 170:
-            lon_over_plus_170 = True
+    if isinstance(coords[0], list):
+        for c in coords[0]:
+            c = list(transform(origin, wgs84, *c))
+            if c[0] < -170:
+                lon_under_minus_170 = True
+            elif c[0] > 170:
+                lon_over_plus_170 = True
+    else:
+        return False
 
     return lon_under_minus_170 and lon_over_plus_170
 
