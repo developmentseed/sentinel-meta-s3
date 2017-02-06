@@ -36,15 +36,32 @@ def epsg_code(geojson):
     return None
 
 
-def convert_coordinates(coords, origin, wgs84):
+def test_wrap_coordinates(coords, origin, wgs84):
+    """ Test whether coordinates wrap around the antimeridian in wgs84 """
+    lon_under_minus_170 = False
+    lon_over_plus_170 = False
+    if isinstance(coords[0], list):
+        for c in coords[0]:
+            c = list(transform(origin, wgs84, *c))
+            if c[0] < -170:
+                lon_under_minus_170 = True
+            elif c[0] > 170:
+                lon_over_plus_170 = True
+    else:
+        return False
+
+    return lon_under_minus_170 and lon_over_plus_170
+
+
+def convert_coordinates(coords, origin, wgs84, wrapped):
     """ Convert coordinates from one crs to another """
     if isinstance(coords, list) or isinstance(coords, tuple):
         try:
             if isinstance(coords[0], list) or isinstance(coords[0], tuple):
-                return [convert_coordinates(list(c), origin, wgs84) for c in coords]
+                return [convert_coordinates(list(c), origin, wgs84, wrapped) for c in coords]
             elif isinstance(coords[0], float):
                 c = list(transform(origin, wgs84, *coords))
-                if c[0] < -170:
+                if wrapped and c[0] < -170:
                     c[0] = c[0] + 360
                 return c
 
@@ -70,19 +87,14 @@ def to_latlon(geojson, origin_espg=None):
         if code:
             origin = Proj(init='epsg:%s' % code)
             wgs84 = Proj(init='epsg:4326')
-
-            new_coords = convert_coordinates(geojson['coordinates'], origin, wgs84)
+            wrapped = test_wrap_coordinates(geojson['coordinates'], origin, wgs84)
+            new_coords = convert_coordinates(geojson['coordinates'], origin, wgs84, wrapped)
             if new_coords:
                 geojson['coordinates'] = new_coords
-                if 'crs' not in geojson:
-                    geojson['crs'] = {
-                        'type': 'name',
-                        'properties': {
-                            'name': 'urn:ogc:def:crs:EPSG:8.9:4326'
-                        }
-                    }
-                else:
-                    geojson['crs']['properties']['name'] = 'urn:ogc:def:crs:EPSG:8.9:4326'
+            try:
+                del geojson['crs']
+            except KeyError:
+                pass
 
     return geojson
 

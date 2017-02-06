@@ -59,7 +59,6 @@ class Test(unittest.TestCase):
         assert tile['data_coverage_percentage'] == 65.58
         assert tile['sensing_orbit_direction'] == 'DESCENDING'
         assert len(tile['download_links']['aws_s3']) == 13
-        assert tile['tile_origin']['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
 
         # Make sure bands urls are left padded
         d_link = tile['download_links']['aws_s3'][0].split('.')[-2].split('/')
@@ -85,7 +84,6 @@ class Test(unittest.TestCase):
         assert tile['data_coverage_percentage'] == 65.58
         assert tile['sensing_orbit_direction'] == 'DESCENDING'
         assert len(tile['download_links']['aws_s3']) == 13
-        assert tile['tile_origin']['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
 
         # Make sure bands urls are left padded
         d_link = tile['download_links']['aws_s3'][0].split('.')[-2].split('/')
@@ -141,7 +139,6 @@ class Test(unittest.TestCase):
 
         gj = to_latlon(copy(geojson))
         self.assertNotEqual(gj['coordinates'][0][0], geojson['coordinates'][0][0])
-        self.assertEqual(gj['crs']['properties']['name'], 'urn:ogc:def:crs:EPSG:8.9:4326')
         self.assertAlmostEqual(gj['coordinates'][0][1][0], 180.60306, 4)
 
     def test_to_latlon(self):
@@ -164,7 +161,6 @@ class Test(unittest.TestCase):
 
         gj = to_latlon(copy(geojson))
         assert gj['coordinates'][0][0] != geojson['coordinates'][0][0]
-        assert gj['crs']['properties']['name'] == 'urn:ogc:def:crs:EPSG:8.9:4326'
 
     def test_get_tile_geometry(self):
 
