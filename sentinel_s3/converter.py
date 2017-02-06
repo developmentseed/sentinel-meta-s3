@@ -43,7 +43,7 @@ def test_wrap_coordinates(coords, origin, wgs84):
     if isinstance(coords, list) or isinstance(coords, tuple):
         try:
             if isinstance(coords[0], list) or isinstance(coords[0], tuple):
-                return [convert_coordinates(list(c), origin, wgs84) for c in coords]
+                return [test_wrap_coordinates(list(c), origin, wgs84) for c in coords]
             elif isinstance(coords[0], float):
                 c = list(transform(origin, wgs84, *coords))
                 if c[0] < -170:
