@@ -96,6 +96,10 @@ def to_latlon(geojson, origin_espg=None):
             new_coords = convert_coordinates(geojson['coordinates'], origin, wgs84, wrapped)
             if new_coords:
                 geojson['coordinates'] = new_coords
+            try:
+                del geojson['crs']
+            except KeyError:
+                pass
 
     return geojson
 
