@@ -58,13 +58,12 @@ def test_wrap_coordinates(coords, origin, wgs84):
     return lon_under_minus_170 and lon_over_plus_170
 
 
-def convert_coordinates(coords, origin, wgs84):
+def convert_coordinates(coords, origin, wgs84, wrapped):
     """ Convert coordinates from one crs to another """
-    wrapped = test_wrap_coordinates(coords, origin, wgs84)
     if isinstance(coords, list) or isinstance(coords, tuple):
         try:
             if isinstance(coords[0], list) or isinstance(coords[0], tuple):
-                return [convert_coordinates(list(c), origin, wgs84) for c in coords]
+                return [convert_coordinates(list(c), origin, wgs84, wrapped) for c in coords]
             elif isinstance(coords[0], float):
                 c = list(transform(origin, wgs84, *coords))
                 if wrapped and c[0] < -170:
@@ -93,8 +92,8 @@ def to_latlon(geojson, origin_espg=None):
         if code:
             origin = Proj(init='epsg:%s' % code)
             wgs84 = Proj(init='epsg:4326')
-
-            new_coords = convert_coordinates(geojson['coordinates'], origin, wgs84)
+            wrapped = test_wrap_coordinates(geojson['coordinates'], origin, wgs84)
+            new_coords = convert_coordinates(geojson['coordinates'], origin, wgs84, wrapped)
             if new_coords:
                 geojson['coordinates'] = new_coords
 
