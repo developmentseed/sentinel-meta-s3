@@ -97,15 +97,6 @@ def to_latlon(geojson, origin_espg=None):
             new_coords = convert_coordinates(geojson['coordinates'], origin, wgs84)
             if new_coords:
                 geojson['coordinates'] = new_coords
-                if 'crs' not in geojson:
-                    geojson['crs'] = {
-                        'type': 'name',
-                        'properties': {
-                            'name': 'urn:ogc:def:crs:EPSG:8.9:4326'
-                        }
-                    }
-                else:
-                    geojson['crs']['properties']['name'] = 'urn:ogc:def:crs:EPSG:8.9:4326'
 
     return geojson
 
