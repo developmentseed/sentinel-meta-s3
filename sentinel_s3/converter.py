@@ -40,20 +40,13 @@ def test_wrap_coordinates(coords, origin, wgs84):
     """ Test whether coordinates wrap around the antimeridian in wgs84 """
     lon_under_minus_170 = False
     lon_over_plus_170 = False
-    if isinstance(coords, list) or isinstance(coords, tuple):
-        try:
-            if isinstance(coords[0], list) or isinstance(coords[0], tuple):
-                return [test_wrap_coordinates(list(c), origin, wgs84) for c in coords]
-            elif isinstance(coords[0], float):
-                c = list(transform(origin, wgs84, *coords))
-                if c[0] < -170:
-                    lon_under_minus_170 = True
-                elif c[0] > 170:
-                    lon_over_plus_170 = True
-                return c
 
-        except IndexError:
-            pass
+    for c in coords[0]:
+        c = list(transform(origin, wgs84, *coords))
+        if c[0] < -170:
+            lon_under_minus_170 = True
+        elif c[0] > 170:
+            lon_over_plus_170 = True
 
     return lon_under_minus_170 and lon_over_plus_170
 
