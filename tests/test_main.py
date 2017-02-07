@@ -20,7 +20,7 @@ class Test(unittest.TestCase):
 
     def test_daily_metadata_with_no_results(self):
         # run with a date that doesn't exist
-        daily_metadata(2015, 9, 1, '.')
+        daily_metadata(2015, 4, 1, '.')
 
     def test_single_metadata(self):
         product = 'S2A_OPER_PRD_MSIL1C_PDMC_20160311T194734_R031_V20160311T011614_20160311T011614'
